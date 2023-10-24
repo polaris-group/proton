@@ -126,6 +126,7 @@ public class ListTextProcessor: TextProcessing {
             indentMode: .outdent,
             attributeValue: nil
         )
+        
         let rangeToReplace = NSRange(location: editedRange.location + 1, length: 1)
         
         editor.replaceCharacters(in: rangeToReplace, with: "")
@@ -141,7 +142,7 @@ public class ListTextProcessor: TextProcessing {
         }
         
         editor.removeAttribute(.strikethroughStyle, at: editor.selectedRange)
-        editor.typingAttributes[.foregroundColor] = editor.textColor
+        editor.typingAttributes[.foregroundColor] = editor.defaultColor
         editor.typingAttributes[.strikethroughStyle] = nil
     }
 
