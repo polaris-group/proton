@@ -746,6 +746,9 @@ class RichTextView: AutogrowingTextView {
             if let attr = GLLPasteboard.general.last() {
                 let object = PasteModel(attr: attr, sourceFrom: .internal)
                 NotificationCenter.default.post(name: ProtonNotificationName.paste, object: object)
+            } else if let str = UIPasteboard.general.string {
+                let attr = NSAttributedString(string: str)
+                NotificationCenter.default.post(name: ProtonNotificationName.paste, object: PasteModel(attr: attr, sourceFrom: .internal))
             } else {
                 super.paste(sender)
             }

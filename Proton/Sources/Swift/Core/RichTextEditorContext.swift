@@ -156,11 +156,29 @@ class RichTextEditorContext: RichTextViewContext {
         else { return }
 
         applyFontFixForEmojiIfRequired(in: richTextView, at: textView.selectedRange)
+        processList(textView)
         invokeDidProcessIfRequired(richTextView)
 
         richTextView.richTextViewDelegate?.richTextView(richTextView, didChangeTextAtRange: richTextView.selectedRange)
     }
 
+    private func processList(_ textView: UITextView) {
+        guard let editor = textView.superview as? EditorView else { return }
+        let currentRange = editor.selectedRange
+        let rangeToCheck = max(0, min(currentRange.endLocation, editor.contentLength) - 2)
+        if rangeToCheck >= 2,
+           editor.contentLength > 0,
+           let value = editor.attributedText.attribute(.listItem, at: rangeToCheck, effectiveRange: nil),
+           (editor.attributedText.attribute(.paragraphStyle, at: rangeToCheck, effectiveRange: nil) as? NSParagraphStyle)?.firstLineHeadIndent ?? 0 > 0 {
+            editor.typingAttributes[.listItem] = value
+            if !((value as? String)?.isChecklist ?? false) {
+                editor.typingAttributes[.listItemValue] = editor.attributedText.attribute(.listItemValue, at: rangeToCheck, effectiveRange: nil)
+            }
+            editor.addAttribute(.listItem, value: value, at: NSRange(location: rangeToCheck, length: 2))
+            editor.addAttribute(.listItemValue, value: editor.attributedText.attribute(.listItem, at: rangeToCheck, effectiveRange: nil), at: NSRange(location: rangeToCheck, length: 2))
+        }
+    }
+    
     private func invokeDidProcessIfRequired(_ richTextView: RichTextView) {
         guard let editor = richTextView.superview as? EditorView else { return }
 

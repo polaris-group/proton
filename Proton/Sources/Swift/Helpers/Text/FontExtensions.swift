@@ -79,7 +79,7 @@ public extension UIFont {
             return self
         }
 
-        return UIFont(descriptor: updatedFontDescriptor, size: 0.0)
+        return UIFont(descriptor: updatedFontDescriptor, size: self.pointSize)
     }
 
     func removing(trait: UIFontDescriptor.SymbolicTraits) -> UIFont {
@@ -89,6 +89,6 @@ public extension UIFont {
             return self
         }
 
-        return UIFont(descriptor: updatedFontDescriptor, size: 0.0)
+        return UIFont(descriptor: updatedFontDescriptor, size: self.pointSize)
     }
 }

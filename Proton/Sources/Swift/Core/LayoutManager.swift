@@ -185,6 +185,9 @@ class LayoutManager: NSLayoutManager {
             }
             let paraStyle = textStorage.attribute(.paragraphStyle, at: characterRange.location, effectiveRange: nil) as? NSParagraphStyle ?? self.defaultParagraphStyle
             
+            var adjustedRect = rect
+            // Account for height of line fragment based on styles defined in paragraph, like paragraphSpacing
+            adjustedRect.size.height = usedRect.height
             if isPreviousLineComplete, skipMarker == false {
                 
                 let level = Int(paraStyle.firstLineHeadIndent/listIndent)
@@ -201,13 +204,13 @@ class LayoutManager: NSLayoutManager {
                     }
                     
                     if level > 0 {
-                        self.drawListItem(level: level, previousLevel: previousLevel, index: self.numberDict[listItemValue, default: 0], rect: rect, paraStyle: paraStyle, font: font, attributeValue: attributeValue)
+                        self.drawListItem(level: level, previousLevel: previousLevel, index: self.numberDict[listItemValue, default: 0], rect: adjustedRect, paraStyle: paraStyle, font: font, attributeValue: attributeValue)
                         self.numberDict[listItemValue, default: 0] += 1
                     }
                     
                 } else {
                     self.counters[level] = 0
-                    self.drawListItem(level: level, previousLevel: previousLevel, index: 0, rect: rect, paraStyle: paraStyle, font: font, attributeValue: attributeValue)
+                    self.drawListItem(level: level, previousLevel: previousLevel, index: 0, rect: adjustedRect, paraStyle: paraStyle, font: font, attributeValue: attributeValue)
                 }
                 
                 previousLevel = level
@@ -456,36 +459,6 @@ class LayoutManager: NSLayoutManager {
             return
         }
         editor.drawHorizontalLines()
-    }
-    
-    override func drawUnderline(forGlyphRange glyphRange: NSRange, underlineType underlineVal: NSUnderlineStyle, baselineOffset: CGFloat, lineFragmentRect lineRect: CGRect, lineFragmentGlyphRange lineGlyphRange: NSRange, containerOrigin: CGPoint) {
-        let firstPosition  = location(forGlyphAt: glyphRange.location).x
-
-        let lastPosition: CGFloat
-
-        if NSMaxRange(glyphRange) < NSMaxRange(lineGlyphRange) {
-            lastPosition = location(forGlyphAt: NSMaxRange(glyphRange)).x
-        } else {
-            lastPosition = lineFragmentUsedRect(
-                forGlyphAt: NSMaxRange(glyphRange) - 1,
-                effectiveRange: nil).size.width
-        }
-
-        var lineRect = lineRect
-        let height = lineRect.size.height * 3.5 / 4.0 // replace your under line height
-        lineRect.origin.x += firstPosition
-        lineRect.size.width = lastPosition - firstPosition
-        lineRect.size.height = height
-
-        lineRect.origin.x += containerOrigin.x
-        lineRect.origin.y += containerOrigin.y
-
-        lineRect = lineRect.integral.insetBy(dx: 0.5, dy: 0.5)
-
-        let path = UIBezierPath(rect: lineRect)
-        // let path = UIBezierPath(roundedRect: lineRect, cornerRadius: 3)
-        // set your cornerRadius
-        path.fill()
     }
     
 //    override func drawBackground(forGlyphRange glyphsToShow: NSRange, at origin: CGPoint) {

@@ -70,7 +70,7 @@ class ListItemView: UIView {
             textLabel.isHidden = false
             imageView.isHidden = true
         }
-        self.backgroundColor = .randomColor
+//        self.backgroundColor = .randomColor
     }
     
     private func setUp() {
