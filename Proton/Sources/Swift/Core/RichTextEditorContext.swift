@@ -175,7 +175,7 @@ class RichTextEditorContext: RichTextViewContext {
                 editor.typingAttributes[.listItemValue] = editor.attributedText.attribute(.listItemValue, at: rangeToCheck, effectiveRange: nil)
             }
             editor.addAttribute(.listItem, value: value, at: NSRange(location: rangeToCheck, length: 2))
-            editor.addAttribute(.listItemValue, value: editor.attributedText.attribute(.listItem, at: rangeToCheck, effectiveRange: nil), at: NSRange(location: rangeToCheck, length: 2))
+            editor.addAttribute(.listItemValue, value: editor.attributedText.attribute(.listItemValue, at: rangeToCheck, effectiveRange: nil), at: NSRange(location: rangeToCheck, length: 2))
         }
     }
     
