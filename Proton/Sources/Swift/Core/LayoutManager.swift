@@ -674,6 +674,7 @@ class LayoutManager: NSLayoutManager {
         else { return }
 
         let characterRange = self.characterRange(forGlyphRange: glyphsToShow, actualGlyphRange: nil)
+        var dict: [NSRange: [BackgroundDrawStyle]] = [:]
         textStorage.enumerateAttribute(.backgroundStyle, in: characterRange) { attr, bgStyleRange, _ in
             var rects = [CGRect]()
             if let backgroundStyle = attr as? BackgroundStyle {
@@ -694,7 +695,7 @@ class LayoutManager: NSLayoutManager {
                     if backgroundStyle.widthMode == .matchText {
                         let content = textStorage.attributedSubstring(from: rangeIntersection)
                         let contentWidth = content.boundingRect(with: rect.size, options: [.usesDeviceMetrics, .usesFontLeading], context: nil).width
-                            rect.size.width = contentWidth
+                        rect.size.width = contentWidth
                     }
 
                     let inset = self.layoutManagerDelegate?.textContainerInset ?? .zero
@@ -723,8 +724,34 @@ class LayoutManager: NSLayoutManager {
                     }
 
                     let r = rect.offsetBy(dx: 1, dy: inset.top)
-                    self.drawBackground(backgroundStyle: backgroundStyle, rects: [r], currentCGContext: currentCGContext)
+                    var items = dict[lineRange, default: []]
+                    var style = BackgroundDrawStyle(lineRange: lineRange, range: rangeIntersection, backgroundStyle: backgroundStyle, rect: r)
+                    if items.isEmpty {
+                        dict[lineRange] = [style]
+                    } else if let last = items.last {
+                        var y: CGFloat = r.minY
+                        var height: CGFloat = r.height
+                        var tr: CGRect = r
+                        for index in 0..<items.count {
+                            let lastRect = items[index].rect
+                            y = min(y, lastRect.minY)
+                            height = max(height, lastRect.height)
+                            tr = CGRect(x: r.minX, y: min(r.minY, lastRect.minY), width: r.width, height: max(r.height, lastRect.height))
+                            var width: CGFloat = lastRect.width
+                            if last.range.endLocation == rangeIntersection.location {
+                                width = max((r.minX - lastRect.minX), width)
+                            }
+                            dict[lineRange]![index].rect = CGRect(x: lastRect.minX, y: y, width: width, height: height)
+                        }
+                        dict[lineRange]?.append(BackgroundDrawStyle(lineRange: lineRange, range: rangeIntersection, backgroundStyle: backgroundStyle, rect: tr))
+                    }
                 }
+            }
+        }
+        
+        for items in dict.values {
+            for item in items {
+                self.drawBackground(backgroundStyle: item.backgroundStyle, rects: [item.rect], currentCGContext: currentCGContext)
             }
         }
     }
@@ -970,4 +997,11 @@ extension UIImage {
         
         return scaledImage
     }
+}
+
+private struct BackgroundDrawStyle {
+    let lineRange: NSRange
+    let range: NSRange
+    let backgroundStyle: BackgroundStyle
+    var rect: CGRect
 }
