@@ -712,8 +712,11 @@ class LayoutManager: NSLayoutManager {
                         let styledText = textStorage.attributedSubstring(from: bgStyleGlyphRange)
                         let textRect = styledText.boundingRect(with: rect.size, options: .usesFontLeading, context: nil)
 
-                        rect.origin.y = usedRect.origin.y - (font.pointSize - font.ascender)
-                        rect.origin.y += (font.ascender - font.capHeight)
+                        if lineRange.endLocation == textStorage.length && textStorage.substring(from: NSRange(location: lineRange.endLocation - 1, length: 1)) != "\n" {
+                            rect.origin.y = usedRect.origin.y + (rect.size.height - textRect.height)
+                        } else {
+                            rect.origin.y = usedRect.origin.y + (rect.size.height - textRect.height) + lineHeightMultipleOffset - lineSpacing
+                        }
                         rect.size.height = textRect.height - lineHeightMultipleOffset
                         rect.origin.x = max(5, rect.origin.x)
                     case .matchLine:
@@ -736,7 +739,7 @@ class LayoutManager: NSLayoutManager {
                             let lastRect = items[index].rect
                             y = min(y, lastRect.minY)
                             height = max(height, lastRect.height)
-                            tr = CGRect(x: r.minX, y: min(r.minY, lastRect.minY), width: r.width, height: max(r.height, lastRect.height))
+                            tr = CGRect(x: r.minX, y: y, width: r.width, height: max(r.height, lastRect.height))
                             var width: CGFloat = lastRect.width
                             if last.range.endLocation == rangeIntersection.location {
                                 width = max((r.minX - lastRect.minX), width)
