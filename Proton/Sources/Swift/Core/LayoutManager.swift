@@ -677,8 +677,11 @@ class LayoutManager: NSLayoutManager {
         var dict: [NSRange: [BackgroundDrawStyle]] = [:]
         textStorage.enumerateAttribute(.backgroundStyle, in: characterRange) { attr, bgStyleRange, _ in
             var rects = [CGRect]()
-            if let backgroundStyle = attr as? BackgroundStyle {
+            if var backgroundStyle = attr as? BackgroundStyle {
                 let bgStyleGlyphRange = self.glyphRange(forCharacterRange: bgStyleRange, actualCharacterRange: nil)
+                if backgroundStyle.color.hexString(false) == "#000000" {
+                    backgroundStyle = BackgroundStyle(color: UIColor.clear, heightMode: .matchText, widthMode: .matchText)
+                }
                 enumerateLineFragments(forGlyphRange: bgStyleGlyphRange) { originRect, usedRect, textContainer, lineRange, _ in
                     let usedRect = usedRect.integral
                     var rangeIntersection = NSIntersectionRange(bgStyleGlyphRange, lineRange)
@@ -741,7 +744,7 @@ class LayoutManager: NSLayoutManager {
                             height = max(height, lastRect.height)
                             tr = CGRect(x: r.minX, y: y, width: r.width, height: max(r.height, lastRect.height))
                             var width: CGFloat = lastRect.width
-                            if last.range.endLocation == rangeIntersection.location {
+                            if last.range.endLocation == rangeIntersection.location, last.backgroundStyle.color != UIColor.clear, backgroundStyle.color != UIColor.clear {
                                 width = max((r.minX - lastRect.minX), width)
                             }
                             dict[lineRange]![index].rect = CGRect(x: lastRect.minX, y: y, width: width, height: height)
@@ -1007,4 +1010,16 @@ private struct BackgroundDrawStyle {
     let range: NSRange
     let backgroundStyle: BackgroundStyle
     var rect: CGRect
+    
+    init(lineRange: NSRange, range: NSRange, backgroundStyle: BackgroundStyle, rect: CGRect) {
+        self.lineRange = lineRange
+        self.range = range
+        self.rect = rect
+        
+        if backgroundStyle.color.hexString(false) == "#000000" {
+            self.backgroundStyle = BackgroundStyle(color: UIColor.clear, heightMode: .matchText, widthMode: .matchText)
+        } else {
+            self.backgroundStyle = backgroundStyle
+        }
+    }
 }
