@@ -24,6 +24,8 @@ import CoreServices
 
 class RichTextEditorContext: RichTextViewContext {
     static let `default` = RichTextEditorContext()
+    
+    private var lastRange: NSRange?
 
     func textViewDidBeginEditing(_ textView: UITextView) {
         guard textView.delegate === self else { return }
@@ -64,6 +66,8 @@ class RichTextEditorContext: RichTextViewContext {
         if shouldChangeText(richTextView, range: range, replacementText: text) == false {
             return false
         }
+        
+        self.lastRange = NSRange(location: range.location, length: text.count)
 
         // if backspace
         var handled = false
@@ -158,8 +162,32 @@ class RichTextEditorContext: RichTextViewContext {
         applyFontFixForEmojiIfRequired(in: richTextView, at: textView.selectedRange)
         processList(textView)
         invokeDidProcessIfRequired(richTextView)
+        
+        if let lastRange {
+            applyChineseFixFontIfRequired(in: richTextView, range: lastRange)
+        }
 
         richTextView.richTextViewDelegate?.richTextView(richTextView, didChangeTextAtRange: richTextView.selectedRange)
+    }
+    
+    private func applyChineseFixFontIfRequired(in textView: RichTextView, range: NSRange) {
+        guard let font = textView.typingAttributes[.font] as? UIFont else { return }
+        guard range.endLocation <= textView.contentLength else { return }
+        let attr = textView.attributedText.attributedSubstring(from: range)
+        if containsChinese(str: attr.string), !font.fontName.contains(".SFUI") {
+            let defaultFont = UIFont.systemFont(ofSize: font.pointSize)
+            textView.typingAttributes[.font] = defaultFont
+            if let editorView = textView.editorView {
+                editorView.typingAttributes[.font] = defaultFont
+                editorView.addAttribute(.font, value: defaultFont, at: range)
+            }
+        }
+    }
+    
+    private func containsChinese(str: String) -> Bool{
+        let match: String = "(^[\\u4e00-\\u9fa5]+$)"
+        let predicate = NSPredicate(format: "SELF matches %@", match)
+        return predicate.evaluate(with: str)
     }
 
     private func processList(_ textView: UITextView) {
