@@ -198,12 +198,26 @@ class RichTextEditorContext: RichTextViewContext {
            editor.contentLength > 0,
            let value = editor.attributedText.attribute(.listItem, at: rangeToCheck, effectiveRange: nil),
            (editor.attributedText.attribute(.paragraphStyle, at: rangeToCheck, effectiveRange: nil) as? NSParagraphStyle)?.firstLineHeadIndent ?? 0 > 0 {
-            editor.typingAttributes[.listItem] = value
+            let v: Any
+            
+            let text = editor.attributedText.substring(from: NSRange(location: currentRange.endLocation - 1, length: 1))
+            if text == "\n",
+                let value = value as? String, value == "listItemSelectedChecklist" {
+                v = "listItemCheckList"
+                editor.typingAttributes[.strikethroughColor] = nil
+                editor.typingAttributes[.strikethroughStyle] = nil
+                editor.typingAttributes[.foregroundColor] = editor.defaultColor
+                editor.addAttribute(.listItem, value: v, at: NSRange(location: currentRange.endLocation - 1, length: 1))
+            } else {
+                v = value
+                editor.addAttribute(.listItem, value: v, at: NSRange(location: rangeToCheck, length: 2))
+                editor.addAttribute(.listItemValue, value: editor.attributedText.attribute(.listItemValue, at: rangeToCheck, effectiveRange: nil), at: NSRange(location: rangeToCheck, length: 2))
+            }
+            
+            editor.typingAttributes[.listItem] = v
             if !((value as? String)?.isChecklist ?? false) {
                 editor.typingAttributes[.listItemValue] = editor.attributedText.attribute(.listItemValue, at: rangeToCheck, effectiveRange: nil)
             }
-            editor.addAttribute(.listItem, value: value, at: NSRange(location: rangeToCheck, length: 2))
-            editor.addAttribute(.listItemValue, value: editor.attributedText.attribute(.listItemValue, at: rangeToCheck, effectiveRange: nil), at: NSRange(location: rangeToCheck, length: 2))
         }
     }
     
