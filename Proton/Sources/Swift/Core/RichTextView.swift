@@ -412,6 +412,7 @@ class RichTextView: AutogrowingTextView {
             return
         } else if location == 2 && editorView.selectedRange.length > 0 {
             super.deleteBackward()
+            richTextViewDelegate?.richTextView(self, didReceive: .backspace, modifierFlags: [], at: NSRange(location: 0, length: 0))
             return
         }
         var range: NSRange? = currentLineRange
