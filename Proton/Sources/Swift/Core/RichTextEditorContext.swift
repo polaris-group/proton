@@ -164,7 +164,10 @@ class RichTextEditorContext: RichTextViewContext {
         invokeDidProcessIfRequired(richTextView)
         
         if let lastRange {
-            applyChineseFixFontIfRequired(in: richTextView, range: lastRange)
+            let paragraphStyle = richTextView.paragraphStyle
+            if (paragraphStyle?.lineSpacing ?? 0) == 11 {
+                applyChineseFixFontIfRequired(in: richTextView, range: lastRange)
+            }
         }
 
         richTextView.richTextViewDelegate?.richTextView(richTextView, didChangeTextAtRange: richTextView.selectedRange)
@@ -175,7 +178,13 @@ class RichTextEditorContext: RichTextViewContext {
         guard range.endLocation <= textView.contentLength else { return }
         let attr = textView.attributedText.attributedSubstring(from: range)
         if containsChinese(str: attr.string), !font.fontName.contains(".SFUI") {
-            let defaultFont = UIFont.systemFont(ofSize: font.pointSize)
+            var defaultFont = UIFont.systemFont(ofSize: font.pointSize)
+            if font.isBold {
+                defaultFont = defaultFont.adding(trait: .traitBold)
+            }
+            if font.isItalics {
+                defaultFont = defaultFont.adding(trait: .traitItalic)
+            }
             textView.typingAttributes[.font] = defaultFont
             if let editorView = textView.editorView {
                 editorView.typingAttributes[.font] = defaultFont
