@@ -26,6 +26,8 @@ class RichTextEditorContext: RichTextViewContext {
     static let `default` = RichTextEditorContext()
     
     private var lastRange: NSRange?
+    
+    private var currentLength = 0
 
     func textViewDidBeginEditing(_ textView: UITextView) {
         guard textView.delegate === self else { return }
@@ -63,6 +65,7 @@ class RichTextEditorContext: RichTextViewContext {
               let richTextView = activeTextView
         else { return true }
 
+        self.currentLength = textView.attributedText.length
         if shouldChangeText(richTextView, range: range, replacementText: text) == false {
             return false
         }
@@ -160,7 +163,9 @@ class RichTextEditorContext: RichTextViewContext {
         else { return }
 
         applyFontFixForEmojiIfRequired(in: richTextView, at: textView.selectedRange)
-        processList(textView)
+        if textView.attributedText.length >= currentLength {
+            processList(textView)
+        }
         invokeDidProcessIfRequired(richTextView)
         
         if let lastRange {
