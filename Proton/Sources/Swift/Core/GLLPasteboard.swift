@@ -27,7 +27,7 @@ public struct GLLPasteboard {
     
     mutating public func last() -> NSAttributedString? {
         guard !stack.isEmpty else { return nil }
-        return stack.removeLast()
+        return stack.last
     }
     
     mutating public func push(_ attributeString: NSAttributedString) {
