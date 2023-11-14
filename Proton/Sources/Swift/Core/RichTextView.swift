@@ -402,6 +402,7 @@ class RichTextView: AutogrowingTextView {
                 let attr = attributedText.attributedSubstring(from: range)
                 if attr.attribute(.listItem, at: 0, effectiveRange: nil) != nil {
                     editorView.selectedRange = NSRange(location: 2, length: 0)
+                    richTextViewDelegate?.richTextView(self, didReceive: .backspace, modifierFlags: [], at: NSRange(location: 0, length: 0))
                 } else {
                     richTextViewDelegate?.richTextView(self, didReceive: .backspace, modifierFlags: [], at: NSRange(location: 0, length: 0))
                 }
@@ -431,7 +432,11 @@ class RichTextView: AutogrowingTextView {
                 p.headIndent = 0
                 p.firstLineHeadIndent = 0
                 editorView.addAttribute(.paragraphStyle, value: p, at: NSRange(location: selectedRange.location - 1, length: 1))
-                editorView.removeAttribute(.paragraphStyle, at: NSRange(location: selectedRange.location - 1, length: 1))
+                if (selectedRange.location + 1) < editorView.contentLength,
+                   let line = editorView.currentLayoutLine,
+                   line.range.length == 1, line.text.string == "\n" {
+                    editorView.addAttribute(.paragraphStyle, value: p, at: NSRange(location: selectedRange.location, length: 1))
+                }
             } else if last.string == ListTextProcessor.blankLineFiller {
                 let range = NSRange(location: selectedRange.location - 1, length: 1)
                 editorView.removeAttribute(.strikethroughStyle, at: range)
@@ -480,9 +485,17 @@ class RichTextView: AutogrowingTextView {
                     } else {
                         super.deleteBackward()
                     }
+                } else {
+                    removeAttrbutesWhenDelete()
                 }
             } else {
                 super.deleteBackward()
+                if let line = editorView.currentLayoutLine,
+                   let value = editorView.attributedText.attribute(.listItem, at: line.range.location, effectiveRange: nil) {
+                    if line.range.length > 1 {
+                        editorView.addAttribute(.listItem, value: value, at: line.range)
+                    }
+                }
             }
             if let r = range {
                 range = NSRange(location: r.location - 1, length: r.length - 1)
@@ -545,7 +558,7 @@ class RichTextView: AutogrowingTextView {
     
     func removeAttrbutesWhenDelete() {
         if let editor = editorView {
-            var selectedRange = editor.selectedRange
+            var selectedRange = editor.currentLayoutLine?.range ?? editor.selectedRange
             // Adjust to span entire line range if the selection starts in the middle of the line
             if let currentLine = editor.contentLinesInRange(NSRange(location: selectedRange.location, length: 0)).first,
                currentLine.range.location >= selectedRange.location,
@@ -571,28 +584,30 @@ class RichTextView: AutogrowingTextView {
             }
             
             editor.removeAttributes([.paragraphStyle, .listItem, .listItemValue], at: selectedRange)
+            let p = NSMutableParagraphStyle()
             if attributedText.length < selectedRange.location,
                let paragraph = attributedText.attribute(.paragraphStyle, at: selectedRange.location, effectiveRange: nil) as? NSParagraphStyle {
-                let p = NSMutableParagraphStyle()
                 p.lineSpacing = 11
                 p.paragraphSpacing = paragraph.paragraphSpacing
                 p.paragraphSpacingBefore = paragraph.paragraphSpacingBefore
                 p.firstLineHeadIndent = 0
                 p.headIndent = 0
-                typingAttributes[.paragraphStyle] = p
-                editor.typingAttributes[.paragraphStyle] = p
-                editor.addAttribute(.paragraphStyle, value: p, at: selectedRange)
             } else {
-                let p = NSMutableParagraphStyle()
                 p.lineSpacing = 11
                 p.firstLineHeadIndent = 0
                 p.headIndent = 0
-                typingAttributes[.paragraphStyle] = p
-                editor.typingAttributes[.paragraphStyle] = p
-                editor.addAttribute(.paragraphStyle, value: p, at: selectedRange)
             }
             editorView?.typingAttributes[.listItem] = nil
             editorView?.typingAttributes[.listItemValue] = nil
+            typingAttributes[.paragraphStyle] = p
+            editor.typingAttributes[.paragraphStyle] = p
+            if let currentLayoutLine = editor.currentLayoutLine {
+                editor.addAttribute(.paragraphStyle, value: p, at: currentLayoutLine.range)
+                editor.removeAttribute(.listItem, at: currentLayoutLine.range)
+                editor.removeAttribute(.listItemValue, at: currentLayoutLine.range)
+            } else {
+                editor.addAttribute(.paragraphStyle, value: p, at: selectedRange)
+            }
         }
     }
 
