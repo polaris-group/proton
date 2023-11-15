@@ -28,6 +28,7 @@ class RichTextEditorContext: RichTextViewContext {
     private var lastRange: NSRange?
     
     private var currentLength = 0
+    private var isEnter = false
 
     func textViewDidBeginEditing(_ textView: UITextView) {
         guard textView.delegate === self else { return }
@@ -105,6 +106,7 @@ class RichTextEditorContext: RichTextViewContext {
                 return false
             }
             richTextView.richTextViewDelegate?.richTextView(richTextView, didReceive: .enter, modifierFlags: [], at: range)
+            isEnter = true
         }
 
         if text == "\t" {
@@ -175,6 +177,10 @@ class RichTextEditorContext: RichTextViewContext {
             }
         }
 
+        if isEnter {
+            fixList(in: textView)
+            isEnter = false
+        }
         richTextView.richTextViewDelegate?.richTextView(richTextView, didChangeTextAtRange: richTextView.selectedRange)
     }
     
@@ -194,6 +200,49 @@ class RichTextEditorContext: RichTextViewContext {
             if let editorView = textView.editorView {
                 editorView.typingAttributes[.font] = defaultFont
                 editorView.addAttribute(.font, value: defaultFont, at: range)
+            }
+        }
+    }
+    
+    private func fixList(in textView: UITextView) {
+        guard let editor = textView.superview as? EditorView else { return }
+        
+        if let line = editor.currentLayoutLine,
+           editor.attributedText.substring(from: NSRange(location: line.range.location - 1, length: 1)) == ListTextProcessor.blankLineFiller {
+            return
+        }
+        if let line = editor.currentLayoutLine,
+           abs(editor.selectedRange.endLocation - line.range.location) <= 1,
+           line.text.length > 0, line.text.string != ListTextProcessor.blankLineFiller,
+           var value = line.text.attribute(.listItem, at: 0, effectiveRange: nil) as? String,
+           let previousLine = editor.previousContentLine(from: line.range.location) {
+            var range = NSRange(location: previousLine.range.location, length: 1)
+            if (range.endLocation + 1) < editor.contentLength,
+               editor.attributedText.substring(from: NSRange(location: range.endLocation, length: 1)) == "\n" {
+                range = NSRange(location: range.location, length: 2)
+            }
+            if range.endLocation < editor.contentLength {
+                let attr = editor.attributedText.attributedSubstring(from: range)
+                if let p = attr.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle,
+                   p.headIndent > 0 {
+                    if value == "listItemSelectedChecklist" {
+                        value = "listItemCheckList"
+                        editor.addAttribute(.foregroundColor, value: editor.defaultColor, at: range)
+                        editor.removeAttribute(.strikethroughStyle, at: range)
+                        editor.removeAttribute(.strikethroughColor, at: range)
+                    }
+                    editor.addAttribute(.listItem, value: value, at: range)
+                    editor.addAttribute(.listItemValue, value: attr.attribute(.listItemValue, at: 0, effectiveRange: nil), at: range)
+                    editor.removeAttribute(.strikethroughStyle, at: range)
+                    
+                    let str = editor.attributedText.substring(from: range)
+                    if !str.contains(ListTextProcessor.blankLineFiller) {
+                        let attrs = editor.attributedText.attributes(at: range.location, effectiveRange: nil)
+                        let marker = NSAttributedString(string: ListTextProcessor.blankLineFiller, attributes: attrs)
+                        editor.replaceCharacters(in: NSRange(location: range.location, length: 0), with: marker)
+                        editor.selectedRange = editor.selectedRange.nextPosition
+                    }
+                }
             }
         }
     }

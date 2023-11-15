@@ -90,7 +90,6 @@ public class ListTextProcessor: TextProcessing {
                     exitListsIfRequired(editor: editor, editedRange: editedRange)
                 }
             }
-
         case .backspace:
             let attributedText = editor.attributedText
             guard editedRange.location > 0,
