@@ -256,9 +256,9 @@ class RichTextEditorContext: RichTextViewContext {
                     let str = editor.attributedText.substring(from: range)
                     if !str.contains(ListTextProcessor.blankLineFiller) {
                         let attrs = editor.attributedText.attributes(at: range.location, effectiveRange: nil)
-                        let marker = NSAttributedString(string: ListTextProcessor.blankLineFiller, attributes: attrs)
+                        let marker = NSAttributedString(string: "\(ListTextProcessor.blankLineFiller)", attributes: attrs)
                         editor.replaceCharacters(in: NSRange(location: range.location, length: 0), with: marker)
-                        editor.selectedRange = editor.selectedRange.nextPosition
+                        editor.selectedRange = NSRange(location: editor.selectedRange.location + marker.length, length: 0)
                     }
                 }
             }

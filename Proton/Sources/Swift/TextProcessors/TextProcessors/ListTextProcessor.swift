@@ -185,6 +185,13 @@ public class ListTextProcessor: TextProcessing {
 
         if (currentLine.text.length == 0 || currentLine.text.string == ListTextProcessor.blankLineFiller),
            attributeValue != nil {
+            
+            if let nextLine = editor.nextContentLine(from: currentLine.range.location),
+               nextLine.text.length > 0, 
+                nextLine.text.attribute(.listItem, at: 0, effectiveRange: nil) != nil {
+                return
+            }
+            
             executeOnDidProcess = { [weak self] editor in
                 self?.terminateList(editor: editor, editedRange: currentLine.range)
             }
