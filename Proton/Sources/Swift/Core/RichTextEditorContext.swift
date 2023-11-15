@@ -106,7 +106,13 @@ class RichTextEditorContext: RichTextViewContext {
                 return false
             }
             richTextView.richTextViewDelegate?.richTextView(richTextView, didReceive: .enter, modifierFlags: [], at: range)
-            isEnter = true
+            if let editor = textView.superview as? EditorView,
+               let line = editor.currentLayoutLine, line.text.length > 0 {
+                if (line.text.substring(from: NSRange(location: 0, length: 1)) == ListTextProcessor.blankLineFiller &&
+                    abs(line.range.location - editor.selectedRange.location) <= 1) || (abs(line.range.location - editor.selectedRange.location) == 0) {
+                    isEnter = true
+                }
+            }
         }
 
         if text == "\t" {
@@ -168,6 +174,10 @@ class RichTextEditorContext: RichTextViewContext {
         if textView.attributedText.length >= currentLength {
             processList(textView)
         }
+        if isEnter {
+            fixList(in: textView)
+            isEnter = false
+        }
         invokeDidProcessIfRequired(richTextView)
         
         if let lastRange {
@@ -175,11 +185,6 @@ class RichTextEditorContext: RichTextViewContext {
             if (paragraphStyle?.lineSpacing ?? 0) == 11 {
                 applyChineseFixFontIfRequired(in: richTextView, range: lastRange)
             }
-        }
-
-        if isEnter {
-            fixList(in: textView)
-            isEnter = false
         }
         richTextView.richTextViewDelegate?.richTextView(richTextView, didChangeTextAtRange: richTextView.selectedRange)
     }
@@ -211,9 +216,22 @@ class RichTextEditorContext: RichTextViewContext {
            editor.attributedText.substring(from: NSRange(location: line.range.location - 1, length: 1)) == ListTextProcessor.blankLineFiller {
             return
         }
+        
+        var selectedRange = editor.selectedRange
         if let line = editor.currentLayoutLine,
-           abs(editor.selectedRange.endLocation - line.range.location) <= 1,
-           line.text.length > 0, line.text.string != ListTextProcessor.blankLineFiller,
+           let currentLine = editor.contentLinesInRange(NSRange(location: line.range.location, length: 0)).first,
+           currentLine.range.length > 0 {
+            var location = line.range.location
+            var length = max(currentLine.range.length, selectedRange.length + (selectedRange.location - line.range.location))
+            let range = NSRange(location: location, length: length)
+            if editor.contentLength > range.endLocation,
+               editor.attributedText.substring(from: NSRange(location: range.endLocation, length: 1)) == "\n" {
+                length += 1
+            }
+            selectedRange = NSRange(location: location, length: length)
+        }
+        
+        if let line = editor.currentLayoutLine,
            var value = line.text.attribute(.listItem, at: 0, effectiveRange: nil) as? String,
            let previousLine = editor.previousContentLine(from: line.range.location) {
             var range = NSRange(location: previousLine.range.location, length: 1)

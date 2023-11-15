@@ -467,7 +467,9 @@ class RichTextView: AutogrowingTextView {
                 paragraphStyle = attributedText.attribute(.paragraphStyle, at: (proposedRange.location - 1), effectiveRange: nil) as? NSMutableParagraphStyle
                 proposedRange = NSRange(location: proposedRange.location - 1, length: 1)
                 fromBlankLineFiller = true
-                removeAttrbutesWhenDelete()
+                if textToBeDeleted != "\n" {
+                    removeAttrbutesWhenDelete()
+                }
                 currentLocation -= 1
             }
             if textToBeDeleted == "\n" {
@@ -483,6 +485,10 @@ class RichTextView: AutogrowingTextView {
                         replaceNewLineCharacter(proposedRange: proposedRange)
                         removeAttrbutesWhenDelete()
                     } else {
+                        let attrs = editorView.attributedText.attributes(at: proposedRange.location - 1, effectiveRange: nil)
+                        if let line = editorView.currentLayoutLine {
+                            editorView.addAttributes(attrs, at: line.range)
+                        }
                         super.deleteBackward()
                     }
                 } else {
