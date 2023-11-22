@@ -25,9 +25,16 @@ class RichTextViewContext: NSObject, UITextViewDelegate {
     weak var activeTextView: RichTextView?
 
     func textView(_ textView: UITextView, shouldInteractWith textAttachment: NSTextAttachment, in characterRange: NSRange, interaction: UITextItemInteraction) -> Bool {
+        if characterRange.length <= 1 {
+            let attr = textView.attributedText.attributedSubstring(from: characterRange)
+            if attr.attribute(NSAttributedString.Key(rawValue: "_emojiName"), at: 0, effectiveRange: nil) != nil {
+                let selectedRange = NSRange(location: characterRange.location + 1, length: 0)
+                NotificationCenter.default.post(name: ProtonNotificationName.didTapEmoji, object: selectedRange)
+            }
+        }
         return interaction != .presentActions
     }
-
+    
     func textViewDidChangeSelection(_ textView: UITextView) {
         guard textView.delegate === self else { return }
 

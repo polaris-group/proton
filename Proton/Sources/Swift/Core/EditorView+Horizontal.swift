@@ -58,6 +58,10 @@ public extension EditorView {
     }
     
     func drawHorizontalLines() {
+        guard let horizontalLineStyle = self.horizontalLineStyle else {
+            return
+        }
+        
         if horizontalShapeLayer == nil {
             horizontalShapeLayer = CAShapeLayer()
             self.richTextView.layer.insertSublayer(horizontalShapeLayer!, at: 0)
@@ -66,15 +70,13 @@ public extension EditorView {
         guard let horizontalShapeLayer else { return }
         
         let textView = self.richTextView
-        guard let horizontalLineStyle = self.horizontalLineStyle else {
-            return
-        }
         
         let path = UIBezierPath()
         
         let lineHeight = horizontalLineStyle.lineSpacing
         let lineSpacing = horizontalLineStyle.lineSpacing
-        let numberOfLines = Int(textView.contentSize.height / lineHeight + 1)
+        let height = max(textView.contentSize.height, textView.bounds.height)
+        let numberOfLines = Int(height / lineHeight + 1)
         
         let originY = self.textContainerInset.top
         for i in 1..<numberOfLines {

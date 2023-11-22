@@ -761,13 +761,6 @@ class RichTextView: AutogrowingTextView {
         if editorView?.responds(to: #selector(paste(_:))) ?? false {
             editorView?.paste(sender)
         } else {
-//            if let data = UIPasteboard.general.data(forPasteboardType: "public.html") {
-//                if let attributedString = try? NSAttributedString(data: data, options: [.documentType: NSAttributedString.DocumentType.html], documentAttributes: nil) {
-//                    let object = PasteModel(attr: attributedString, sourceFrom: .outer)
-//                    NotificationCenter.default.post(name: ProtonNotificationName.paste, object: object)
-//                    return
-//                }
-//            }
             if let attr = GLLPasteboard.general.last() {
                 let object = PasteModel(attr: attr, sourceFrom: .internal)
                 NotificationCenter.default.post(name: ProtonNotificationName.paste, object: object)
