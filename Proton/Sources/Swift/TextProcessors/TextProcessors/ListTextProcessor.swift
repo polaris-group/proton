@@ -21,6 +21,43 @@
 import Foundation
 import UIKit
 
+public func changeParagraph(on editor: EditorView) {
+    guard editor.attributedText.length >= 2 else { return }
+    let range = NSRange(location: 2, length: editor.attributedText.length - 2)
+    editor.attributedText.enumerateAttribute(.attachment, in: range) { value, r, _ in
+        guard (value as? Attachment) == nil else {
+            return
+        }
+        editor.attributedText.enumerateAttribute(.paragraphStyle, in: r) { value, range, _ in
+            guard let p = value as? NSParagraphStyle, p.headIndent > 0 else { return }
+            let para = p.mutableParagraphStyle
+            para.firstLineHeadIndent = 24
+            para.headIndent = 24
+            editor.addAttribute(.paragraphStyle, value: para, at: range)
+        }
+    }
+    if let manager = editor.textStorage.layoutManagers.first as? LayoutManager {
+        let m = EditorMarkerManager(manager: manager)
+        m.getMarkers()
+        for item in m.caches {
+            let range = item.range
+            let attr = editor.attributedText.attributedSubstring(from: range)
+            let number = NSMutableAttributedString(string: "\(item.value).")
+            if let font = attr.attribute(.font, at: 0, effectiveRange: nil) as? UIFont {
+                number.addAttribute(.font, value: font, range: number.fullRange)
+                let markerSize = number.boundingRect(with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: font.pointSize), options: [], context: nil).size
+                let width = max(24, ceil(markerSize.width))
+                if let paragraphStyle = attr.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle {
+                    let p = paragraphStyle.mutableParagraphStyle
+                    p.firstLineHeadIndent = width
+                    p.headIndent = width
+                    editor.addAttribute(.paragraphStyle, value: p, at: item.range)
+                }
+            }
+        }
+    }
+}
+
 /// Text process capable of processing keyboard inputs specific to lists. `ListTextProcessor` only works after a range of text
 /// has been converted to list using `ListCommand`.
 ///
@@ -159,6 +196,7 @@ public class ListTextProcessor: TextProcessing {
               let previousLine = editor.previousContentLine(from: currentLine.range.location)
         else { return }
 
+        changeParagraph(on: editor)
         if let nextLine = editor.nextContentLine(from: currentLine.range.location),
            nextLine.range.endLocation < editor.contentLength - 1 {
             let attributedText = editor.attributedText

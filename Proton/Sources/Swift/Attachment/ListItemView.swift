@@ -65,12 +65,11 @@ class ListItemView: UIView {
             imageView.frame = CGRect(x: frame.midX - image.size.width / 2, y: (frame.height - image.size.height) / 2, width: image.size.width, height: image.size.height)
         case let .text(attr, rect):
             textLabel.attributedText = attr
-            let markerSize = attr.boundingRect(with: CGSize(width: 24, height: rect.height), options: [], context: nil).size
+            let markerSize = attr.boundingRect(with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: rect.height), options: [], context: nil).size
             textLabel.frame = CGRect(x: (frame.width - markerSize.width) / 2, y: (frame.height - rect.height) / 2, width: markerSize.width, height: rect.height)
             textLabel.isHidden = false
             imageView.isHidden = true
         }
-//        self.backgroundColor = .randomColor
     }
     
     private func setUp() {

@@ -186,6 +186,12 @@ class RichTextEditorContext: RichTextViewContext {
                 applyChineseFixFontIfRequired(in: richTextView, range: lastRange)
             }
         }
+        
+        if textView.attributedText.attribute(.listItem, at: textView.selectedRange.location, effectiveRange: nil) != nil,
+           let editor = textView.superview as? EditorView {
+           changeParagraph(on: editor)
+        }
+        
         richTextView.richTextViewDelegate?.richTextView(richTextView, didChangeTextAtRange: richTextView.selectedRange)
     }
     

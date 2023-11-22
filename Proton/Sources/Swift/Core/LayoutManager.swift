@@ -49,7 +49,7 @@ private struct ListItemValue {
     }
 }
 
-class LayoutManager: NSLayoutManager {
+public class LayoutManager: NSLayoutManager {
     
     private let defaultBulletColor = UIColor.black
     private var counters = [Int: Int]()
@@ -67,7 +67,7 @@ class LayoutManager: NSLayoutManager {
         lastListItemModels = []
     }
     
-    override func drawGlyphs(forGlyphRange glyphsToShow: NSRange, at origin: CGPoint) {
+    public override func drawGlyphs(forGlyphRange glyphsToShow: NSRange, at origin: CGPoint) {
         super.drawGlyphs(forGlyphRange: glyphsToShow, at: origin)
         guard let textStorage = self.textStorage else { return }
         
@@ -667,7 +667,7 @@ class LayoutManager: NSLayoutManager {
         return layoutManagerDelegate?.font ?? UIFont.preferredFont(forTextStyle: .body)
     }
     
-    override func drawBackground(forGlyphRange glyphsToShow: NSRange, at origin: CGPoint) {
+    public override func drawBackground(forGlyphRange glyphsToShow: NSRange, at origin: CGPoint) {
         super.drawBackground(forGlyphRange: glyphsToShow, at: origin)
         guard let textStorage = textStorage,
               let currentCGContext = UIGraphicsGetCurrentContext()
@@ -1022,4 +1022,205 @@ private struct BackgroundDrawStyle {
             self.backgroundStyle = backgroundStyle
         }
     }
+}
+
+public class EditorMarkerManager {
+    
+    let manager: LayoutManager
+    
+    public struct Value {
+        public let range: NSRange
+        public let value: String
+    }
+    
+    public var caches: [Value] = []
+    var counters = [Int: Int]()
+    var numberDict: [String: Int] = [:]
+    
+    public init(manager: LayoutManager) {
+        self.manager = manager
+    }
+    
+    public func getMarkers() {
+        guard let textStorage = manager.textStorage else { return }
+        var items: [ListItemValue] = []
+        textStorage.enumerateAttribute(.listItem, in: textStorage.fullRange, options: []) { (value, range, _) in
+            if value != nil {
+                items.append(ListItemValue(range: range, value: value))
+            }
+        }
+        
+        guard !items.isEmpty else {
+            return
+        }
+        var pre = 0
+        for index in 1..<items.count {
+            let preItem = items[pre]
+            let item = items[index]
+            if preItem.range.endLocation == item.range.location, preItem.range.length > 0 {
+                items[pre].update(with: NSRange(location: preItem.range.location, length: preItem.range.length - 1))
+            }
+            pre = index
+        }
+        
+        for item in items {
+            getMarker(textStorage: textStorage, listRange: item.range, attributeValue: item.value)
+        }
+    }
+    
+    func getMarker(textStorage: NSTextStorage, listRange: NSRange, attributeValue: Any?) {
+        var lastLayoutRect: CGRect?
+        var lastLayoutParaStyle: NSParagraphStyle?
+        var lastLayoutFont: UIFont?
+        
+        var previousLevel = 0
+        
+        let defaultFont = manager.layoutManagerDelegate?.font ?? UIFont.preferredFont(forTextStyle: .body)
+        let listIndent = manager.layoutManagerDelegate?.listLineFormatting.indentation ?? 25.0
+        
+        var prevStyle: NSParagraphStyle?
+        
+        if listRange.location > 0,
+           textStorage.attribute(.listItem, at: listRange.location - 1, effectiveRange: nil) != nil {
+            prevStyle = textStorage.attribute(.paragraphStyle, at: listRange.location - 1, effectiveRange: nil) as? NSParagraphStyle
+        }
+        
+        if prevStyle == nil {
+            counters = [:]
+        }
+        
+        var levelToSet = 0
+        textStorage.enumerateAttribute(.paragraphStyle, in: listRange, options: []) { value, range, _ in
+            levelToSet = 0
+            if let paraStyle = (value as? NSParagraphStyle)?.mutableParagraphStyle {
+                let previousLevel = Int(prevStyle?.firstLineHeadIndent ?? 0)/Int(listIndent)
+                let currentLevel = Int(paraStyle.firstLineHeadIndent)/Int(listIndent)
+                
+                if currentLevel - previousLevel > 1 {
+                    levelToSet = previousLevel + 1
+                    let indentation = CGFloat(levelToSet) * listIndent
+                    paraStyle.firstLineHeadIndent = indentation
+                    paraStyle.headIndent = indentation
+                    textStorage.addAttribute(.paragraphStyle, value: paraStyle, range: range)
+                    prevStyle = paraStyle
+                } else {
+                    prevStyle = value as? NSParagraphStyle
+                }
+            }
+        }
+        
+        let listGlyphRange = manager.glyphRange(forCharacterRange: listRange, actualCharacterRange: nil)
+        manager.enumerateLineFragments(forGlyphRange: listGlyphRange) { [weak self] (rect, usedRect, textContainer, glyphRange, stop) in
+            guard let self else { return }
+            let manager = self.manager
+            let characterRange = manager.characterRange(forGlyphRange: glyphRange, actualGlyphRange: nil)
+            
+            var newLineRange = NSRange.zero
+            if characterRange.location > 0 {
+                newLineRange.location = characterRange.location - 1
+                newLineRange.length = 1
+            }
+            
+            // Determines if previous line is completed i.e. terminates with a newline char. Absence of newline character means that the
+            // line is wrapping and rendering the number/bullet should be skipped.
+            var isPreviousLineComplete = true
+            var skipMarker = false
+            
+            if newLineRange.length > 0 {
+                let newLineString = textStorage.substring(from: newLineRange)
+                isPreviousLineComplete = newLineString == "\n"
+                skipMarker = textStorage.attribute(.skipNextListMarker, at: newLineRange.location, effectiveRange: nil) != nil
+            }
+            
+            let font: UIFont
+            let attr = textStorage.attributedSubstring(from: NSRange(location: characterRange.location, length: 1))
+            if attr.string == ListTextProcessor.blankLineFiller, characterRange.length > 1 {
+                font = textStorage.attribute(.font, at: characterRange.location + 1, effectiveRange: nil) as? UIFont ?? defaultFont
+            } else {
+                font = textStorage.attribute(.font, at: characterRange.location, effectiveRange: nil) as? UIFont ?? defaultFont
+            }
+            let paraStyle = textStorage.attribute(.paragraphStyle, at: characterRange.location, effectiveRange: nil) as? NSParagraphStyle ?? manager.defaultParagraphStyle
+            
+            var adjustedRect = rect
+            // Account for height of line fragment based on styles defined in paragraph, like paragraphSpacing
+            adjustedRect.size.height = usedRect.height
+            if isPreviousLineComplete, skipMarker == false {
+                
+                let level = Int(paraStyle.firstLineHeadIndent/listIndent)
+                
+                if let attributeValue = attributeValue as? String, attributeValue == "listItemNumber" {
+                    let listItemValue = (textStorage.attribute(.listItemValue, at: characterRange.location, effectiveRange: nil) as? String) ?? attributeValue
+                    var index = (self.counters[level] ?? 0)
+                    self.counters[level] = index + 1
+                    
+                    // reset index counter for level when list indentation (level) changes.
+                    if level > previousLevel, level > 1 {
+                        index = 0
+                        self.counters[level] = 1
+                    }
+                    
+                    if level > 0 {
+                        self.numberDict[listItemValue, default: 0] += 1
+                        let index = self.numberDict[listItemValue, default: 0]
+                        self.caches.append(Value(range: characterRange, value: "\(index)"))
+                    }
+                    
+                } else {
+                    self.counters[level] = 0
+                }
+                
+                previousLevel = level
+                
+                // TODO: should this be moved inside level > 0 check above?
+            }
+            lastLayoutParaStyle = paraStyle
+            lastLayoutRect = rect
+            lastLayoutFont = font
+        }
+        
+//        var skipMarker = false
+//
+//        if textStorage.length > 0 {
+//            let range = NSRange(location: textStorage.length - 1, length: 1)
+//            let lastChar = textStorage.substring(from: range)
+//            skipMarker = lastChar == "\n" && textStorage.attribute(.skipNextListMarker, at: range.location, effectiveRange: nil) != nil
+//        }
+//
+//        guard skipMarker == false,
+//              let lastRect = lastLayoutRect,
+//              textStorage.length > 1,
+//              textStorage.substring(from: NSRange(location: listRange.endLocation - 1, length: 1)) == "\n",
+//              let paraStyle = lastLayoutParaStyle
+//        else { return }
+//
+//        let level = Int(paraStyle.firstLineHeadIndent/listIndent)
+//        var index = (counters[level] ?? 0)
+//        let origin = CGPoint(x: lastRect.minX, y: lastRect.maxY)
+//
+//        var para: NSParagraphStyle?
+//        if textStorage.length > listRange.endLocation {
+//            para = textStorage.attribute(.paragraphStyle, at: listRange.endLocation, effectiveRange: nil) as? NSParagraphStyle
+//            let paraLevel = Int((para?.firstLineHeadIndent ?? 0)/listIndent)
+//            // don't draw last rect if there's a following list item (in another indent level)
+//            if para != nil, paraLevel != level {
+//                return
+//            }
+//        }
+//
+//        let newLineRect = CGRect(origin: origin, size: lastRect.size)
+//
+//        if level > previousLevel, level > 1 {
+//            index = 0
+//            counters[level] = 1
+//        }
+//        previousLevel = level
+//
+//        let font = lastLayoutFont ?? defaultFont
+//        var idx = index
+//        if let listItemValue = textStorage.attribute(.listItemValue, at: listRange.endLocation - 1, effectiveRange: nil) as? String {
+//            idx = self.numberDict[listItemValue, default: 0]
+//            self.numberDict[listItemValue, default: 0] += 1
+//        }
+    }
+    
 }
