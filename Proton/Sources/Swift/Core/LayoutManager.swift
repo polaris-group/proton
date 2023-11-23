@@ -354,7 +354,7 @@ public class LayoutManager: NSLayoutManager {
             if let f = attr.attribute(.font, at: 0, effectiveRange: nil) as? UIFont {
                 attr.addAttribute(.font, value: f.withSize(font.pointSize), range: attr.fullRange)
             }
-            markerRect = CGRect(origin: CGPoint(x: rect.minX, y: rect.minY + topInset), size: CGSize(width: paraStyle.firstLineHeadIndent, height: rect.height))
+            markerRect = CGRect(origin: CGPoint(x: rect.minX, y: rect.minY + topInset), size: CGSize(width: paraStyle.headIndent, height: rect.height))
             let rect = CGRect(x: 0, y: markerRect.minY, width: markerRect.width, height: markerRect.height)
             let itemView = ListItemView(frame: rect)
             itemView.render(with: .text(attr, markerRect), attrValue: attributeValue)
@@ -1178,49 +1178,51 @@ public class EditorMarkerManager {
             lastLayoutFont = font
         }
         
-//        var skipMarker = false
-//
-//        if textStorage.length > 0 {
-//            let range = NSRange(location: textStorage.length - 1, length: 1)
-//            let lastChar = textStorage.substring(from: range)
-//            skipMarker = lastChar == "\n" && textStorage.attribute(.skipNextListMarker, at: range.location, effectiveRange: nil) != nil
-//        }
-//
-//        guard skipMarker == false,
-//              let lastRect = lastLayoutRect,
-//              textStorage.length > 1,
-//              textStorage.substring(from: NSRange(location: listRange.endLocation - 1, length: 1)) == "\n",
-//              let paraStyle = lastLayoutParaStyle
-//        else { return }
-//
-//        let level = Int(paraStyle.firstLineHeadIndent/listIndent)
-//        var index = (counters[level] ?? 0)
-//        let origin = CGPoint(x: lastRect.minX, y: lastRect.maxY)
-//
-//        var para: NSParagraphStyle?
-//        if textStorage.length > listRange.endLocation {
-//            para = textStorage.attribute(.paragraphStyle, at: listRange.endLocation, effectiveRange: nil) as? NSParagraphStyle
-//            let paraLevel = Int((para?.firstLineHeadIndent ?? 0)/listIndent)
-//            // don't draw last rect if there's a following list item (in another indent level)
-//            if para != nil, paraLevel != level {
-//                return
-//            }
-//        }
-//
-//        let newLineRect = CGRect(origin: origin, size: lastRect.size)
-//
-//        if level > previousLevel, level > 1 {
-//            index = 0
-//            counters[level] = 1
-//        }
-//        previousLevel = level
-//
-//        let font = lastLayoutFont ?? defaultFont
-//        var idx = index
-//        if let listItemValue = textStorage.attribute(.listItemValue, at: listRange.endLocation - 1, effectiveRange: nil) as? String {
-//            idx = self.numberDict[listItemValue, default: 0]
-//            self.numberDict[listItemValue, default: 0] += 1
-//        }
+        var skipMarker = false
+
+        if textStorage.length > 0 {
+            let range = NSRange(location: textStorage.length - 1, length: 1)
+            let lastChar = textStorage.substring(from: range)
+            skipMarker = lastChar == "\n" && textStorage.attribute(.skipNextListMarker, at: range.location, effectiveRange: nil) != nil
+        }
+
+        guard skipMarker == false,
+              let lastRect = lastLayoutRect,
+              textStorage.length > 1,
+              textStorage.substring(from: NSRange(location: listRange.endLocation - 1, length: 1)) == "\n",
+              let paraStyle = lastLayoutParaStyle
+        else { return }
+
+        let level = Int(paraStyle.firstLineHeadIndent/listIndent)
+        var index = (counters[level] ?? 0)
+        let origin = CGPoint(x: lastRect.minX, y: lastRect.maxY)
+
+        var para: NSParagraphStyle?
+        if textStorage.length > listRange.endLocation {
+            para = textStorage.attribute(.paragraphStyle, at: listRange.endLocation, effectiveRange: nil) as? NSParagraphStyle
+            let paraLevel = Int((para?.firstLineHeadIndent ?? 0)/listIndent)
+            // don't draw last rect if there's a following list item (in another indent level)
+            if para != nil, paraLevel != level {
+                return
+            }
+        }
+
+        let newLineRect = CGRect(origin: origin, size: lastRect.size)
+
+        if level > previousLevel, level > 1 {
+            index = 0
+            counters[level] = 1
+        }
+        previousLevel = level
+
+        let font = lastLayoutFont ?? defaultFont
+        var idx = index
+        if let listItemValue = textStorage.attribute(.listItemValue, at: listRange.endLocation - 1, effectiveRange: nil) as? String {
+            idx = self.numberDict[listItemValue, default: 0]
+            self.numberDict[listItemValue, default: 0] += 1
+            let index = self.numberDict[listItemValue, default: 0]
+            caches.append(Value(range: NSRange(location: listRange.endLocation - 1, length: 1), value: "\(index + 1)"))
+        }
     }
     
 }

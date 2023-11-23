@@ -99,6 +99,8 @@ public struct EditorLine {
     }
 }
 
+public let editorEndCharactor: String = "\u{FEFF}"
+
 /// A scrollable, multiline text region capable of resizing itself based of the height of the content. Maximum height of `EditorView`
 /// may be restricted using an absolute value or by using auto-layout constraints. Instantiation of `EditorView` is simple and straightforward
 /// and can be used to host simple formatted text or complex layout containing multiple nested `EditorView` via use of `Attachment`.

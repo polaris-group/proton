@@ -30,6 +30,7 @@ class ListItemView: UIView {
     
     lazy var textLabel: UILabel = {
         let label = UILabel()
+        label.textAlignment = .center
         return label
     }()
     
@@ -64,9 +65,19 @@ class ListItemView: UIView {
             }
             imageView.frame = CGRect(x: frame.midX - image.size.width / 2, y: (frame.height - image.size.height) / 2, width: image.size.width, height: image.size.height)
         case let .text(attr, rect):
-            textLabel.attributedText = attr
             let markerSize = attr.boundingRect(with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: rect.height), options: [], context: nil).size
-            textLabel.frame = CGRect(x: (frame.width - markerSize.width) / 2, y: (frame.height - rect.height) / 2, width: markerSize.width, height: rect.height)
+            if markerSize.width > frame.width {
+                let mutableAttr = NSMutableAttributedString(attributedString: attr)
+                if attr.length > 0,
+                   let font = attr.attribute(.font, at: 0, effectiveRange: nil) as? UIFont {
+                    mutableAttr.addAttribute(.font, value: font.withSize(font.pointSize - 10), range: mutableAttr.fullRange)
+                }
+                textLabel.attributedText = mutableAttr
+                textLabel.frame = CGRect(x: 0, y: (frame.height - rect.height) / 2, width: frame.width, height: rect.height)
+            } else {
+                textLabel.frame = CGRect(x: 0, y: (frame.height - rect.height) / 2, width: frame.width, height: rect.height)
+                textLabel.attributedText = attr
+            }
             textLabel.isHidden = false
             imageView.isHidden = true
         }

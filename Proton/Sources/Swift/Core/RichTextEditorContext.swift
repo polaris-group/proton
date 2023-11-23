@@ -29,6 +29,7 @@ class RichTextEditorContext: RichTextViewContext {
     
     private var currentLength = 0
     private var isEnter = false
+    private var enter = false
 
     func textViewDidBeginEditing(_ textView: UITextView) {
         guard textView.delegate === self else { return }
@@ -113,6 +114,7 @@ class RichTextEditorContext: RichTextViewContext {
                     isEnter = true
                 }
             }
+            enter = true
         }
 
         if text == "\t" {
@@ -174,10 +176,6 @@ class RichTextEditorContext: RichTextViewContext {
         if textView.attributedText.length >= currentLength {
             processList(textView)
         }
-        if isEnter {
-            fixList(in: textView)
-            isEnter = false
-        }
         invokeDidProcessIfRequired(richTextView)
         
         if let lastRange {
@@ -187,9 +185,13 @@ class RichTextEditorContext: RichTextViewContext {
             }
         }
         
-        if textView.attributedText.attribute(.listItem, at: textView.selectedRange.location, effectiveRange: nil) != nil,
-           let editor = textView.superview as? EditorView {
-           changeParagraph(on: editor)
+        if let editor = textView.superview as? EditorView {
+            changeParagraph(on: editor)
+        }
+        
+        if isEnter {
+            fixList(in: textView)
+            isEnter = false
         }
         
         richTextView.richTextViewDelegate?.richTextView(richTextView, didChangeTextAtRange: richTextView.selectedRange)

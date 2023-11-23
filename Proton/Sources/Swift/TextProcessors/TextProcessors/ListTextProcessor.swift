@@ -23,19 +23,21 @@ import UIKit
 
 public func changeParagraph(on editor: EditorView) {
     guard editor.attributedText.length >= 2 else { return }
-    let range = NSRange(location: 2, length: editor.attributedText.length - 2)
-    editor.attributedText.enumerateAttribute(.attachment, in: range) { value, r, _ in
-        guard (value as? Attachment) == nil else {
-            return
-        }
-        editor.attributedText.enumerateAttribute(.paragraphStyle, in: r) { value, range, _ in
-            guard let p = value as? NSParagraphStyle, p.headIndent > 0 else { return }
-            let para = p.mutableParagraphStyle
+    editor.attributedText.enumerateAttribute(.listItem, in: editor.attributedText.fullRange) { value, range, _ in
+        let attr = editor.attributedText.attributedSubstring(from: range)
+        guard let p = attr.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle else { return }
+        let para = p.mutableParagraphStyle
+        if value != nil {
             para.firstLineHeadIndent = 24
             para.headIndent = 24
-            editor.addAttribute(.paragraphStyle, value: para, at: range)
+        } else {
+            para.firstLineHeadIndent = 0
+            para.headIndent = 0
         }
+        para.lineSpacing = 11
+        editor.addAttribute(.paragraphStyle, value: para, at: range)
     }
+    
     if let manager = editor.textStorage.layoutManagers.first as? LayoutManager {
         let m = EditorMarkerManager(manager: manager)
         m.getMarkers()
@@ -46,11 +48,12 @@ public func changeParagraph(on editor: EditorView) {
             if let font = attr.attribute(.font, at: 0, effectiveRange: nil) as? UIFont {
                 number.addAttribute(.font, value: font, range: number.fullRange)
                 let markerSize = number.boundingRect(with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: font.pointSize), options: [], context: nil).size
-                let width = max(24, ceil(markerSize.width))
+                let width = max(24, ceil(markerSize.width) + 8)
                 if let paragraphStyle = attr.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle {
                     let p = paragraphStyle.mutableParagraphStyle
                     p.firstLineHeadIndent = width
                     p.headIndent = width
+                    p.lineSpacing = 11
                     editor.addAttribute(.paragraphStyle, value: p, at: item.range)
                 }
             }
@@ -196,7 +199,6 @@ public class ListTextProcessor: TextProcessing {
               let previousLine = editor.previousContentLine(from: currentLine.range.location)
         else { return }
 
-        changeParagraph(on: editor)
         if let nextLine = editor.nextContentLine(from: currentLine.range.location),
            nextLine.range.endLocation < editor.contentLength - 1 {
             let attributedText = editor.attributedText
@@ -221,7 +223,7 @@ public class ListTextProcessor: TextProcessing {
             attributeValue = previousLine.text.attribute(.listItem, at: 0, effectiveRange: nil)
         }
 
-        if (currentLine.text.length == 0 || currentLine.text.string == ListTextProcessor.blankLineFiller),
+        if (currentLine.text.length == 0 || currentLine.text.string == ListTextProcessor.blankLineFiller || currentLine.text.string == editorEndCharactor),
            attributeValue != nil {
             
             if let nextLine = editor.nextContentLine(from: currentLine.range.location),
@@ -344,3 +346,5 @@ public class ListTextProcessor: TextProcessing {
         return mutableStyle
     }
 }
+
+
