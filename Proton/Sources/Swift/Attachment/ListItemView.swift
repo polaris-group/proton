@@ -70,7 +70,7 @@ class ListItemView: UIView {
                 let mutableAttr = NSMutableAttributedString(attributedString: attr)
                 if attr.length > 0,
                    let font = attr.attribute(.font, at: 0, effectiveRange: nil) as? UIFont {
-                    mutableAttr.addAttribute(.font, value: font.withSize(font.pointSize - 10), range: mutableAttr.fullRange)
+                    mutableAttr.addAttribute(.font, value: font.withSize(max(font.pointSize - 10, 20)), range: mutableAttr.fullRange)
                 }
                 textLabel.attributedText = mutableAttr
                 textLabel.frame = CGRect(x: 0, y: (frame.height - rect.height) / 2, width: frame.width, height: rect.height)

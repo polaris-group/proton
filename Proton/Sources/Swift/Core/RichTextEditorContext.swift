@@ -102,7 +102,6 @@ class RichTextEditorContext: RichTextViewContext {
 
         if text == "\n" {
             richTextView.richTextViewDelegate?.richTextView(richTextView, shouldHandle: .enter, modifierFlags: [], at: range, handled: &handled)
-
             guard handled == false else {
                 return false
             }
@@ -114,6 +113,7 @@ class RichTextEditorContext: RichTextViewContext {
                     isEnter = true
                 }
             }
+            
             enter = true
         }
 
@@ -148,11 +148,14 @@ class RichTextEditorContext: RichTextViewContext {
               editedRange.location <= editor.contentLength
         else { return }
 
-        // custom attributes to carry over
-        let attributes = editor.attributedText.attributes(at: editedRange.location - 1, effectiveRange: nil)
+        var attributes = editor.attributedText.attributes(at: editedRange.location - 1, effectiveRange: nil)
         if editor.typingAttributes[.backgroundStyle] == nil {
             let customAttributesToApply: [NSAttributedString.Key] = [.backgroundStyle]
-
+            
+            let marker = editor.attributedText.substring(from: NSRange(location: editedRange.location - 1, length: 1))
+            if marker == ListTextProcessor.blankLineFiller, attributes[.backgroundStyle] == nil, editedRange.location > 1 {
+                attributes = editor.attributedText.attributes(at: editedRange.location - 2, effectiveRange: nil)
+            }
             let filteredAttributes = attributes.filter { customAttributesToApply.contains($0.key) }
             for attribute in filteredAttributes {
                 editor.typingAttributes[attribute.key] = attribute.value

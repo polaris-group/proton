@@ -706,7 +706,7 @@ public class LayoutManager: NSLayoutManager {
                     case .matchTextExact:
                         rect.origin.y = usedRect.origin.y - (font.pointSize - font.ascender)
                         rect.origin.y += (font.ascender - font.capHeight)
-                        rect.size.height =  font.capHeight + abs(font.descender)
+                        rect.size.height = font.capHeight + abs(font.descender)
                         let content = textStorage.attributedSubstring(from: rangeIntersection)
                         var contentWidth = content.boundingRect(with: rect.size, options: [.usesDeviceMetrics, .usesFontLeading], context: nil).width
                         rect.size.width = contentWidth
@@ -715,12 +715,23 @@ public class LayoutManager: NSLayoutManager {
                         let styledText = textStorage.attributedSubstring(from: bgStyleGlyphRange)
                         let textRect = styledText.boundingRect(with: rect.size, options: .usesFontLeading, context: nil)
 
-                        if lineRange.endLocation == textStorage.length && textStorage.substring(from: NSRange(location: lineRange.endLocation - 1, length: 1)) != "\n" {
-                            rect.origin.y = usedRect.origin.y + (rect.size.height - textRect.height)
+                        if textRect.size.height > 0 {
+                            if lineRange.endLocation == textStorage.length && textStorage.substring(from: NSRange(location: lineRange.endLocation - 1, length: 1)) != "\n" {
+                                rect.origin.y = usedRect.origin.y + (rect.size.height - textRect.height)
+                            } else {
+                                rect.origin.y = usedRect.origin.y + (rect.size.height - textRect.height) + lineHeightMultipleOffset - lineSpacing
+                            }
+                            rect.size.height = textRect.height - lineHeightMultipleOffset
                         } else {
-                            rect.origin.y = usedRect.origin.y + (rect.size.height - textRect.height) + lineHeightMultipleOffset - lineSpacing
+                            if lineRange.endLocation == textStorage.length && textStorage.substring(from: NSRange(location: lineRange.endLocation - 1, length: 1)) != "\n" {
+                                rect.origin.y = usedRect.origin.y - (font.pointSize - font.ascender)
+                                rect.origin.y += (font.ascender - font.capHeight)
+                            } else {
+                                rect.origin.y = usedRect.origin.y + lineHeightMultipleOffset
+                            }
+                            rect.size.height = textRect.height > 0 ? (textRect.height - lineHeightMultipleOffset) : (rect.height - lineSpacing)
+                            rect.size.height = max(rect.size.height, font.capHeight + abs(font.descender), font.pointSize + 2)
                         }
-                        rect.size.height = textRect.height - lineHeightMultipleOffset
                         rect.origin.x = max(5, rect.origin.x)
                     case .matchLine:
                         // Glyphs can take space outside of the line fragment, and we cannot draw outside of it.

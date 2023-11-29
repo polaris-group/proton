@@ -23,11 +23,11 @@ import UIKit
 
 public func changeParagraph(on editor: EditorView) {
     guard editor.attributedText.length >= 2 else { return }
-    editor.attributedText.enumerateAttribute(.listItem, in: editor.attributedText.fullRange) { value, range, _ in
-        let attr = editor.attributedText.attributedSubstring(from: range)
-        guard let p = attr.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle else { return }
+    
+    editor.attributedText.enumerateAttribute(.paragraphStyle, in: editor.attributedText.fullRange) { p, r, _ in
+        guard let p = p as? NSParagraphStyle else { return }
         let para = p.mutableParagraphStyle
-        if value != nil {
+        if p.headIndent > 0 {
             para.firstLineHeadIndent = 24
             para.headIndent = 24
         } else {
@@ -35,7 +35,7 @@ public func changeParagraph(on editor: EditorView) {
             para.headIndent = 0
         }
         para.lineSpacing = 11
-        editor.addAttribute(.paragraphStyle, value: para, at: range)
+        editor.addAttribute(.paragraphStyle, value: para, at: r)
     }
     
     if let manager = editor.textStorage.layoutManagers.first as? LayoutManager {
@@ -223,7 +223,7 @@ public class ListTextProcessor: TextProcessing {
             attributeValue = previousLine.text.attribute(.listItem, at: 0, effectiveRange: nil)
         }
 
-        if (currentLine.text.length == 0 || currentLine.text.string == ListTextProcessor.blankLineFiller || currentLine.text.string == editorEndCharactor),
+        if (currentLine.text.length == 0 || currentLine.text.string == ListTextProcessor.blankLineFiller),
            attributeValue != nil {
             
             if let nextLine = editor.nextContentLine(from: currentLine.range.location),
