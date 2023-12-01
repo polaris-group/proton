@@ -322,7 +322,7 @@ class RichTextView: AutogrowingTextView {
                     leading = textContainer.lineFragmentPadding + 5
                 }
                 NSLayoutConstraint.activate([
-                    placeholderLabel.topAnchor.constraint(equalTo: self.topAnchor, constant: textContainerInset.top + frame.maxY),
+                    placeholderLabel.topAnchor.constraint(equalTo: self.topAnchor, constant: textContainerInset.top + frame.maxY + 12),
                     placeholderLabel.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -textContainerInset.bottom),
                     placeholderLabel.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: leading),
                     placeholderLabel.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -textContainer.lineFragmentPadding),

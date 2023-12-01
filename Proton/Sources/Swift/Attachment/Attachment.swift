@@ -113,7 +113,8 @@ open class Attachment: NSTextAttachment, BoundsObserving {
             selectionView.removeFromSuperview()
             if let tableView = view.subviews.first?.subviews.first as? UITableView,
                let cell = tableView.visibleCells.first {
-                cell.contentView.layer.borderWidth = 0
+                cell.contentView.layer.borderColor = UIColor(hex: "0x001C30")?.withAlphaComponent(0.04).cgColor
+                cell.contentView.layer.borderWidth = 1
             }
         }
     }
