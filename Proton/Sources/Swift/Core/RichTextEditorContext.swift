@@ -204,20 +204,20 @@ class RichTextEditorContext: RichTextViewContext {
         guard let font = textView.typingAttributes[.font] as? UIFont else { return }
         guard range.endLocation <= textView.contentLength else { return }
         let attr = textView.attributedText.attributedSubstring(from: range)
-        if containsChinese(str: attr.string), !font.fontName.contains(".SFUI") {
-            var defaultFont = UIFont.systemFont(ofSize: font.pointSize)
-            if font.isBold {
-                defaultFont = defaultFont.adding(trait: .traitBold)
-            }
-            if font.isItalics {
-                defaultFont = defaultFont.adding(trait: .traitItalic)
-            }
-            textView.typingAttributes[.font] = defaultFont
-            if let editorView = textView.editorView {
-                editorView.typingAttributes[.font] = defaultFont
-                editorView.addAttribute(.font, value: defaultFont, at: range)
-            }
-        }
+//        if containsChinese(str: attr.string), !font.fontName.contains(".SFUI") {
+//            var defaultFont = UIFont.systemFont(ofSize: font.pointSize)
+//            if font.isBold {
+//                defaultFont = defaultFont.adding(trait: .traitBold)
+//            }
+//            if font.isItalics {
+//                defaultFont = defaultFont.adding(trait: .traitItalic)
+//            }
+//            textView.typingAttributes[.font] = defaultFont
+//            if let editorView = textView.editorView {
+//                editorView.typingAttributes[.font] = defaultFont
+//                editorView.addAttribute(.font, value: defaultFont, at: range)
+//            }
+//        }
     }
     
     private func fixList(in textView: UITextView) {
