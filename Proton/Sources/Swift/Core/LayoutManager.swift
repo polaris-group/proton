@@ -675,6 +675,7 @@ public class LayoutManager: NSLayoutManager {
 
         let characterRange = self.characterRange(forGlyphRange: glyphsToShow, actualGlyphRange: nil)
         var dict: [NSRange: [BackgroundDrawStyle]] = [:]
+        guard characterRange.upperBound <= textStorage.length else { return }
         textStorage.enumerateAttribute(.backgroundStyle, in: characterRange) { attr, bgStyleRange, _ in
             var rects = [CGRect]()
             if var backgroundStyle = attr as? BackgroundStyle {

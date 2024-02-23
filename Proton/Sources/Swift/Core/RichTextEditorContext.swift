@@ -181,12 +181,12 @@ class RichTextEditorContext: RichTextViewContext {
         }
         invokeDidProcessIfRequired(richTextView)
         
-        if let lastRange, let editor = textView.superview as? EditorView {
+        if let lastRange, let editor = textView.superview as? EditorView, editor.isRoot {
             if lastRange.endLocation < editor.contentLength {
                 let nextCh = richTextView.attributedText.substring(from: NSRange(location: lastRange.endLocation, length: 1))
                 if nextCh == ListTextProcessor.blankLineFiller, let line = editor.currentLayoutLine {
                     let replaceRange = NSRange(location: lastRange.location, length: lastRange.length + 1)
-                    let attrs = editor.attributedText.attributes(at: lastRange.endLocation + 1, effectiveRange: nil)
+                    let attrs = editor.attributedText.attributes(at: min(lastRange.endLocation + 1, editor.contentLength - 1), effectiveRange: nil)
                     let attr = NSMutableAttributedString(string: ListTextProcessor.blankLineFiller)
                     attr.append(editor.attributedText.attributedSubstring(from: lastRange))
                     attr.addAttributes(attrs, range: attr.fullRange)
@@ -199,12 +199,11 @@ class RichTextEditorContext: RichTextViewContext {
             }
         }
         
-        if let editor = textView.superview as? EditorView {
-            changeParagraph(on: editor)
-        }
-        
-        if isEnter {
+        if isEnter,
+           let editor = textView.superview as? EditorView,
+           editor.isRoot {
             fixList(in: textView)
+            changeParagraph(on: editor)
             isEnter = false
         }
         

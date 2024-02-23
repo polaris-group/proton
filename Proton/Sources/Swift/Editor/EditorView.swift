@@ -127,6 +127,9 @@ open class EditorView: UIView {
     public var mode: DarkMode = .light
     
     public var defaultColor: UIColor?
+    public var isRoot: Bool {
+        return self.containerAttachment?.containerEditorView == nil
+    }
 
     var editorContextDelegate: EditorViewDelegate? {
         get { editorViewContext.delegate }
