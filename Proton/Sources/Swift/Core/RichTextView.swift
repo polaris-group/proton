@@ -447,6 +447,24 @@ class RichTextView: AutogrowingTextView {
                 }
             }
             
+            
+            var selectedRange = editorView.selectedRange
+            if let currentLine = editorView.contentLinesInRange(NSRange(location: selectedRange.location, length: 0)).first,
+               currentLine.range.length > 0 {
+                let location = currentLine.range.location
+                var length = max(currentLine.range.length, selectedRange.length + (selectedRange.location - currentLine.range.location))
+                let range = NSRange(location: location, length: length)
+                if editorView.contentLength > range.endLocation,
+                   editorView.attributedText.substring(from: NSRange(location: range.endLocation, length: 1)) == "\n" {
+                    length += 1
+                }
+                selectedRange = NSRange(location: location, length: length)
+            }
+            if let value = editorView.attributedText.attribute(.listItem, at: selectedRange.location, effectiveRange: nil) as? String {
+                let attrs = editorView.attributedText.attributes(at: selectedRange.location, effectiveRange: nil)
+                editorView.addAttributes(attrs, at: selectedRange)
+            }
+            
             richTextViewDelegate?.richTextView(self, didReceive: .backspace, modifierFlags: [], at: selectedRange)
         }
 

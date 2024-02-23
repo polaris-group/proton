@@ -264,15 +264,15 @@ class RichTextEditorContext: RichTextViewContext {
                 let attr = editor.attributedText.attributedSubstring(from: range)
                 if let p = attr.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle,
                    p.headIndent > 0 {
-                    if value == "listItemSelectedChecklist" {
-                        value = "listItemCheckList"
-                        editor.addAttribute(.foregroundColor, value: editor.defaultColor, at: range)
-                        editor.removeAttribute(.strikethroughStyle, at: range)
-                        editor.removeAttribute(.strikethroughColor, at: range)
-                    }
-                    editor.addAttribute(.listItem, value: value, at: range)
-                    editor.addAttribute(.listItemValue, value: attr.attribute(.listItemValue, at: 0, effectiveRange: nil), at: range)
-                    editor.removeAttribute(.strikethroughStyle, at: range)
+//                    if value == "listItemSelectedChecklist" {
+//                        value = "listItemCheckList"
+//                        editor.addAttribute(.foregroundColor, value: editor.defaultColor, at: range)
+//                        editor.removeAttribute(.strikethroughStyle, at: range)
+//                        editor.removeAttribute(.strikethroughColor, at: range)
+//                    }
+//                    editor.addAttribute(.listItem, value: value, at: range)
+//                    editor.addAttribute(.listItemValue, value: attr.attribute(.listItemValue, at: 0, effectiveRange: nil), at: range)
+//                    editor.removeAttribute(.strikethroughStyle, at: range)
                     
                     let str = editor.attributedText.substring(from: range)
                     if !str.contains(ListTextProcessor.blankLineFiller) {
@@ -303,18 +303,40 @@ class RichTextEditorContext: RichTextViewContext {
             let v: Any
             
             let text = editor.attributedText.substring(from: NSRange(location: currentRange.endLocation - 1, length: 1))
-            if text == "\n",
-                let value = value as? String, value == "listItemSelectedChecklist" {
-                v = "listItemCheckList"
-                editor.typingAttributes[.strikethroughColor] = nil
-                editor.typingAttributes[.strikethroughStyle] = nil
-                editor.typingAttributes[.foregroundColor] = editor.defaultColor
-                editor.addAttribute(.listItem, value: v, at: NSRange(location: currentRange.endLocation - 1, length: 1))
-            } else {
-                v = value
-                editor.addAttribute(.listItem, value: v, at: NSRange(location: rangeToCheck, length: 2))
-                editor.addAttribute(.listItemValue, value: editor.attributedText.attribute(.listItemValue, at: rangeToCheck, effectiveRange: nil), at: NSRange(location: rangeToCheck, length: 2))
-            }
+//            if text == "\n",
+//               let line = editor.currentLayoutLine,
+//                let value = value as? String, value == "listItemSelectedChecklist" {
+//                var isNewLine = true
+//                for ch in line.text.string {
+//                    if !["\n", ListTextProcessor.blankLineFiller].contains(String(ch)) {
+//                        isNewLine = false
+//                        break
+//                    }
+//                }
+//                if isNewLine {
+//                    v = "listItemCheckList"
+//                    editor.typingAttributes[.strikethroughColor] = nil
+//                    editor.typingAttributes[.strikethroughStyle] = nil
+//                    editor.typingAttributes[.foregroundColor] = editor.defaultColor
+//                    let range = NSRange(location: currentRange.endLocation - 1, length: 1)
+//                    editor.addAttribute(.listItem, value: v, at: range)
+//                    editor.addAttribute(.foregroundColor, value: editor.defaultColor, at: range)
+//                    editor.removeAttribute(.strikethroughStyle, at: range)
+//                    editor.removeAttribute(.strikethroughColor, at: range)
+//                } else {
+//                    v = value
+//                    editor.addAttribute(.listItem, value: v, at: NSRange(location: rangeToCheck, length: 2))
+//                    editor.addAttribute(.listItemValue, value: editor.attributedText.attribute(.listItemValue, at: rangeToCheck, effectiveRange: nil), at: NSRange(location: rangeToCheck, length: 2))
+//                }
+//            } else {
+//                v = value
+//                editor.addAttribute(.listItem, value: v, at: NSRange(location: rangeToCheck, length: 2))
+//                editor.addAttribute(.listItemValue, value: editor.attributedText.attribute(.listItemValue, at: rangeToCheck, effectiveRange: nil), at: NSRange(location: rangeToCheck, length: 2))
+//            }
+            
+            v = value
+            editor.addAttribute(.listItem, value: v, at: NSRange(location: rangeToCheck, length: 2))
+            editor.addAttribute(.listItemValue, value: editor.attributedText.attribute(.listItemValue, at: rangeToCheck, effectiveRange: nil), at: NSRange(location: rangeToCheck, length: 2))
             
             editor.typingAttributes[.listItem] = v
             if !((value as? String)?.isChecklist ?? false) {
