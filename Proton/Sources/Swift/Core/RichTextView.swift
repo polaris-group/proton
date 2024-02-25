@@ -460,7 +460,8 @@ class RichTextView: AutogrowingTextView {
                 }
                 selectedRange = NSRange(location: location, length: length)
             }
-            if let value = editorView.attributedText.attribute(.listItem, at: selectedRange.location, effectiveRange: nil) as? String {
+            if selectedRange.location < editorView.attributedText.length,
+               let value = editorView.attributedText.attribute(.listItem, at: selectedRange.location, effectiveRange: nil) as? String {
                 let attrs = editorView.attributedText.attributes(at: selectedRange.location, effectiveRange: nil)
                 editorView.addAttributes(attrs, at: selectedRange)
             }
