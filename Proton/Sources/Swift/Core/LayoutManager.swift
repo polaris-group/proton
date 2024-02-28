@@ -690,6 +690,9 @@ public class LayoutManager: NSLayoutManager {
                     if last == "\n" {
                         rangeIntersection = NSRange(location: rangeIntersection.location, length: rangeIntersection.length - 1)
                     }
+                    if rangeIntersection.endLocation > textStorage.length {
+                        rangeIntersection = bgStyleGlyphRange
+                    }
                     let paragraphStyle = textStorage.attribute(.paragraphStyle, at: rangeIntersection.location, effectiveRange: nil) as? NSParagraphStyle ?? self.defaultParagraphStyle
                     let font = textStorage.attribute(.font, at: rangeIntersection.location, effectiveRange: nil) as? UIFont ?? self.defaultFont
                     let lineHeightMultiple = max(paragraphStyle.lineHeightMultiple, 1)
