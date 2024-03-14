@@ -30,6 +30,7 @@ class RichTextEditorContext: RichTextViewContext {
     private var currentLength = 0
     private var isEnter = false
     private var enter = false
+    private var replacementText: String = ""
 
     func textViewDidBeginEditing(_ textView: UITextView) {
         guard textView.delegate === self else { return }
@@ -67,6 +68,7 @@ class RichTextEditorContext: RichTextViewContext {
               let richTextView = activeTextView
         else { return true }
 
+        self.replacementText = text
         self.currentLength = textView.attributedText.length
         if shouldChangeText(richTextView, range: range, replacementText: text) == false {
             return false
@@ -106,13 +108,7 @@ class RichTextEditorContext: RichTextViewContext {
                 return false
             }
             richTextView.richTextViewDelegate?.richTextView(richTextView, didReceive: .enter, modifierFlags: [], at: range)
-            if let editor = textView.superview as? EditorView,
-               let line = editor.currentLayoutLine, line.text.length > 0 {
-                if (line.text.substring(from: NSRange(location: 0, length: 1)) == ListTextProcessor.blankLineFiller &&
-                    abs(line.range.location - editor.selectedRange.location) <= 1) || (abs(line.range.location - editor.selectedRange.location) == 0) {
-                    isEnter = true
-                }
-            }
+            isEnter = true
             
             enter = true
         }
@@ -174,7 +170,7 @@ class RichTextEditorContext: RichTextViewContext {
         guard textView.delegate === self,
               let richTextView = activeTextView
         else { return }
-
+        
         applyFontFixForEmojiIfRequired(in: richTextView, at: textView.selectedRange)
         if textView.attributedText.length >= currentLength {
             processList(textView)
@@ -214,20 +210,6 @@ class RichTextEditorContext: RichTextViewContext {
         guard let font = textView.typingAttributes[.font] as? UIFont else { return }
         guard range.endLocation <= textView.contentLength else { return }
         let attr = textView.attributedText.attributedSubstring(from: range)
-//        if containsChinese(str: attr.string), !font.fontName.contains(".SFUI") {
-//            var defaultFont = UIFont.systemFont(ofSize: font.pointSize)
-//            if font.isBold {
-//                defaultFont = defaultFont.adding(trait: .traitBold)
-//            }
-//            if font.isItalics {
-//                defaultFont = defaultFont.adding(trait: .traitItalic)
-//            }
-//            textView.typingAttributes[.font] = defaultFont
-//            if let editorView = textView.editorView {
-//                editorView.typingAttributes[.font] = defaultFont
-//                editorView.addAttribute(.font, value: defaultFont, at: range)
-//            }
-//        }
     }
     
     private func fixList(in textView: UITextView) {
@@ -264,16 +246,6 @@ class RichTextEditorContext: RichTextViewContext {
                 let attr = editor.attributedText.attributedSubstring(from: range)
                 if let p = attr.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle,
                    p.headIndent > 0 {
-//                    if value == "listItemSelectedChecklist" {
-//                        value = "listItemCheckList"
-//                        editor.addAttribute(.foregroundColor, value: editor.defaultColor, at: range)
-//                        editor.removeAttribute(.strikethroughStyle, at: range)
-//                        editor.removeAttribute(.strikethroughColor, at: range)
-//                    }
-//                    editor.addAttribute(.listItem, value: value, at: range)
-//                    editor.addAttribute(.listItemValue, value: attr.attribute(.listItemValue, at: 0, effectiveRange: nil), at: range)
-//                    editor.removeAttribute(.strikethroughStyle, at: range)
-                    
                     let str = editor.attributedText.substring(from: range)
                     if !str.contains(ListTextProcessor.blankLineFiller) {
                         let attrs = editor.attributedText.attributes(at: range.location, effectiveRange: nil)
@@ -295,7 +267,80 @@ class RichTextEditorContext: RichTextViewContext {
     private func processList(_ textView: UITextView) {
         guard let editor = textView.superview as? EditorView else { return }
         let currentRange = editor.selectedRange
-        let rangeToCheck = max(0, min(currentRange.endLocation, editor.contentLength) - 2)
+        var len = replacementText.count
+        
+        if let currentLine = editor.contentLinesInRange(currentRange).first,
+           currentLine.text.length > 0,
+           let previousLine = editor.previousContentLine(from: currentLine.range.location) {
+            let range = NSRange(location: previousLine.range.endLocation, length: 1)
+            if let para = currentLine.text.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle,
+               currentLine.text.attribute(.listItem, at: 0, effectiveRange: nil) == nil,
+               let newLineListItem = editor.attributedText.attribute(.listItem, at: range.location, effectiveRange: nil) as? String {
+                editor.addAttribute(.listItem, value: newLineListItem, at: currentLine.range)
+                editor.addAttribute(.listItemValue, value: editor.attributedText.attribute(.listItemValue, at: range.location, effectiveRange: nil), at: currentLine.range)
+                if newLineListItem != "listItemSelectedChecklist" {
+                    editor.removeAttribute(.strikethroughStyle, at: currentLine.range)
+                    editor.removeAttribute(.strokeColor, at: currentLine.range)
+                }
+                let attr = editor.attributedText
+                editor.attributedText.enumerateAttributes(in: currentLine.range) { attrs, range, stop in
+                    let subAttr = attr.attributedSubstring(from: range)
+                    var color = editor.defaultColor
+                    if let c = subAttr.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? UIColor {
+                        color = c
+                    }
+                    if newLineListItem == "listItemSelectedChecklist" {
+                        color = color?.withAlphaComponent(0.32)
+                    } else {
+                        color = color?.withAlphaComponent(1)
+                    }
+
+                    editor.addAttribute(.foregroundColor, value: color, at: range)
+                    editor.addAttribute(.strikethroughColor, value: color, at: range)
+                    editor.typingAttributes[.foregroundColor] = color
+                    editor.typingAttributes[.strikethroughColor] = color
+                }
+                
+            }
+            
+            if let value = currentLine.text.attribute(.listItem, at: 0, effectiveRange: nil) as? String {
+                if value != "listItemSelectedChecklist" {
+                    editor.removeAttribute(.strikethroughStyle, at: currentLine.range)
+                    editor.removeAttribute(.strikethroughColor, at: currentLine.range)
+                }
+                let attr = editor.attributedText
+                editor.attributedText.enumerateAttributes(in: currentLine.range) { attrs, range, stop in
+                    let subAttr = attr.attributedSubstring(from: range)
+                    var color = editor.defaultColor
+                    if let c = subAttr.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? UIColor {
+                        color = c
+                    }
+                    if value == "listItemSelectedChecklist" {
+                        color = color?.withAlphaComponent(0.32)
+                    } else {
+                        color = color?.withAlphaComponent(1)
+                    }
+
+                    editor.addAttribute(.foregroundColor, value: color, at: range)
+                    editor.addAttribute(.strikethroughColor, value: color, at: range)
+                    editor.typingAttributes[.foregroundColor] = color
+                    editor.typingAttributes[.strikethroughColor] = color
+                }
+            }
+            
+            len = editor.selectedRange.location - currentLine.range.location
+        }
+        
+        if len == 0 {
+            if let currentLine = editor.contentLinesInRange(currentRange).first {
+                len = editor.selectedRange.location - currentLine.range.location
+            } else {
+                return
+            }
+        }
+        guard len > 0 else { return }
+        let rangeToCheck = max(0, min(currentRange.endLocation, editor.contentLength) - len)
+        
         if rangeToCheck >= 2,
            editor.contentLength > 0,
            let value = editor.attributedText.attribute(.listItem, at: rangeToCheck, effectiveRange: nil),
@@ -303,40 +348,9 @@ class RichTextEditorContext: RichTextViewContext {
             let v: Any
             
             let text = editor.attributedText.substring(from: NSRange(location: currentRange.endLocation - 1, length: 1))
-//            if text == "\n",
-//               let line = editor.currentLayoutLine,
-//                let value = value as? String, value == "listItemSelectedChecklist" {
-//                var isNewLine = true
-//                for ch in line.text.string {
-//                    if !["\n", ListTextProcessor.blankLineFiller].contains(String(ch)) {
-//                        isNewLine = false
-//                        break
-//                    }
-//                }
-//                if isNewLine {
-//                    v = "listItemCheckList"
-//                    editor.typingAttributes[.strikethroughColor] = nil
-//                    editor.typingAttributes[.strikethroughStyle] = nil
-//                    editor.typingAttributes[.foregroundColor] = editor.defaultColor
-//                    let range = NSRange(location: currentRange.endLocation - 1, length: 1)
-//                    editor.addAttribute(.listItem, value: v, at: range)
-//                    editor.addAttribute(.foregroundColor, value: editor.defaultColor, at: range)
-//                    editor.removeAttribute(.strikethroughStyle, at: range)
-//                    editor.removeAttribute(.strikethroughColor, at: range)
-//                } else {
-//                    v = value
-//                    editor.addAttribute(.listItem, value: v, at: NSRange(location: rangeToCheck, length: 2))
-//                    editor.addAttribute(.listItemValue, value: editor.attributedText.attribute(.listItemValue, at: rangeToCheck, effectiveRange: nil), at: NSRange(location: rangeToCheck, length: 2))
-//                }
-//            } else {
-//                v = value
-//                editor.addAttribute(.listItem, value: v, at: NSRange(location: rangeToCheck, length: 2))
-//                editor.addAttribute(.listItemValue, value: editor.attributedText.attribute(.listItemValue, at: rangeToCheck, effectiveRange: nil), at: NSRange(location: rangeToCheck, length: 2))
-//            }
-            
             v = value
-            editor.addAttribute(.listItem, value: v, at: NSRange(location: rangeToCheck, length: 2))
-            editor.addAttribute(.listItemValue, value: editor.attributedText.attribute(.listItemValue, at: rangeToCheck, effectiveRange: nil), at: NSRange(location: rangeToCheck, length: 2))
+            editor.addAttribute(.listItem, value: v, at: NSRange(location: rangeToCheck, length: len))
+            editor.addAttribute(.listItemValue, value: editor.attributedText.attribute(.listItemValue, at: rangeToCheck, effectiveRange: nil), at: NSRange(location: rangeToCheck, length: len))
             
             editor.typingAttributes[.listItem] = v
             if !((value as? String)?.isChecklist ?? false) {
