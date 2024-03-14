@@ -23,6 +23,8 @@ import UIKit
 
 class RichTextViewContext: NSObject, UITextViewDelegate {
     weak var activeTextView: RichTextView?
+    
+    private var initialContentOffset: CGPoint? = nil
 
     func textView(_ textView: UITextView, shouldInteractWith textAttachment: NSTextAttachment, in characterRange: NSRange, interaction: UITextItemInteraction) -> Bool {
         if characterRange.length <= 1 {
@@ -78,4 +80,18 @@ class RichTextViewContext: NSObject, UITextViewDelegate {
             }
         }
     }
+    
+    public func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        initialContentOffset = scrollView.contentOffset
+    }
+
+    public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+        guard let initialContentOffset else { return }
+        let offset = initialContentOffset.y - scrollView.contentOffset.y
+        if offset > 50 {
+            self.initialContentOffset = nil
+            NotificationCenter.default.post(name: ProtonNotificationName.scrollToResignFocus, object: nil)
+        }
+    }
+    
 }

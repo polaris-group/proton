@@ -668,11 +668,6 @@ open class EditorView: UIView {
             .paragraphStyle: paragraphStyle
         ]
         richTextView.adjustsFontForContentSizeCategory = true
-        
-        token = richTextView.observe(\.contentOffset) { [weak self] _, _ in
-            guard let strongSelf = self else { return }
-            strongSelf.contentOffsetClosure?(strongSelf.richTextView.contentOffset)
-        }
     }
     
     deinit {
