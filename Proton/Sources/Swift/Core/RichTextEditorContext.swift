@@ -31,6 +31,7 @@ class RichTextEditorContext: RichTextViewContext {
     private var isEnter = false
     private var enter = false
     private var replacementText: String = ""
+    private var lastBackgroundStyle: BackgroundStyle? = nil
 
     func textViewDidBeginEditing(_ textView: UITextView) {
         guard textView.delegate === self else { return }
@@ -128,7 +129,7 @@ class RichTextEditorContext: RichTextViewContext {
     private func shouldChangeText(_ richTextView: RichTextView, range: NSRange, replacementText: String) -> Bool {
         guard let editor = richTextView.superview as? EditorView else { return true }
         
-        updateTypingAttributes(editor: editor, editedRange: range)
+        updateTypingAttributes(editor: editor, editedRange: range, replacementText: replacementText)
 
         for processor in richTextView.textProcessor?.sortedProcessors ?? [] {
             let shouldProcess = processor.shouldProcess(editor, shouldProcessTextIn: range, replacementText: replacementText)
@@ -139,7 +140,7 @@ class RichTextEditorContext: RichTextViewContext {
         return true
     }
 
-    private func updateTypingAttributes(editor: EditorView, editedRange: NSRange) {
+    private func updateTypingAttributes(editor: EditorView, editedRange: NSRange, replacementText text: String) {
         guard editedRange.location > 0,
               editedRange.location <= editor.contentLength
         else { return }
@@ -154,6 +155,9 @@ class RichTextEditorContext: RichTextViewContext {
             }
             let filteredAttributes = attributes.filter { customAttributesToApply.contains($0.key) }
             for attribute in filteredAttributes {
+                if attribute.key == .backgroundStyle {
+                    lastBackgroundStyle = attribute.value as? BackgroundStyle
+                }
                 editor.typingAttributes[attribute.key] = attribute.value
             }
         }
@@ -171,6 +175,7 @@ class RichTextEditorContext: RichTextViewContext {
               let richTextView = activeTextView
         else { return }
         
+        updateReplaceTextAttributes(in: richTextView)
         applyFontFixForEmojiIfRequired(in: richTextView, at: textView.selectedRange)
         if textView.attributedText.length >= currentLength {
             processList(textView)
@@ -204,6 +209,18 @@ class RichTextEditorContext: RichTextViewContext {
         }
         
         richTextView.richTextViewDelegate?.richTextView(richTextView, didChangeTextAtRange: richTextView.selectedRange)
+        self.lastBackgroundStyle = nil
+        self.replacementText = ""
+    }
+    
+    private func updateReplaceTextAttributes(in textView: RichTextView) {
+        guard !replacementText.isEmpty, 
+            let editor = textView.superview as? EditorView,
+              editor.selectedRange.location > replacementText.count else { return }
+        let attributes = editor.attributedText.attributes(at: editor.selectedRange.location - replacementText.count, effectiveRange: nil)
+        if let backgroundStyle = self.lastBackgroundStyle {
+            editor.addAttribute(.backgroundStyle, value: backgroundStyle, at: NSRange(location: editor.selectedRange.location - replacementText.count, length: replacementText.count))
+        }
     }
     
     private func applyChineseFixFontIfRequired(in textView: RichTextView, range: NSRange) {
