@@ -398,7 +398,7 @@ class RichTextView: AutogrowingTextView {
         guard contentLength > 0 else { return }
         var proposedRange = NSRange(location: max(0, selectedRange.location - 1), length: 0)
         if location == 2 && editorView.selectedRange.length == 0 {
-            if let range = currentLineRange, range.length > 0 {
+            if let range = currentLineRange, range.length > 0, range.endLocation <= editorView.contentLength {
                 let attr = attributedText.attributedSubstring(from: range)
                 if attr.attribute(.listItem, at: 0, effectiveRange: nil) != nil {
                     editorView.selectedRange = NSRange(location: 2, length: 0)
