@@ -45,6 +45,7 @@ class ListItemView: UIView {
     }
     
     func render(with type: ListItemViewType, attrValue: String) {
+        guard #available(iOS 13.0, *) else { return }
         self.isUserInteractionEnabled = attrValue == "listItemCheckList" || attrValue == "listItemSelectedChecklist"
         switch type {
         case let .image(image, checked):
@@ -53,11 +54,10 @@ class ListItemView: UIView {
             self.checked = checked
             switch image.renderingMode {
             case .alwaysTemplate:
-                imageView.tintColor = .white
-                imageView.image = image
+                imageView.image = image.withRenderingMode(.alwaysTemplate).withTintColor(UIColor.white)
             default:
                 imageView.tintColor = .clear
-                if #available(iOS 13.0, *), attrValue == "listItemBullet" {
+                if attrValue == "listItemBullet" {
                     imageView.image = image.withRenderingMode(.alwaysOriginal).withTintColor(UIColor(hex: "#001C30")!)
                 } else {
                     imageView.image = image
