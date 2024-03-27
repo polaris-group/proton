@@ -177,10 +177,10 @@ class RichTextEditorContext: RichTextViewContext {
         
         updateReplaceTextAttributes(in: richTextView)
         applyFontFixForEmojiIfRequired(in: richTextView, at: textView.selectedRange)
+        invokeDidProcessIfRequired(richTextView)
         if textView.attributedText.length >= currentLength {
             processList(textView)
         }
-        invokeDidProcessIfRequired(richTextView)
         
         if let lastRange, let editor = textView.superview as? EditorView, editor.isRoot {
             if lastRange.endLocation < editor.contentLength {
@@ -203,7 +203,9 @@ class RichTextEditorContext: RichTextViewContext {
         if isEnter,
            let editor = textView.superview as? EditorView,
            editor.isRoot {
-            fixList(in: textView)
+            if !editor.removeSingleBlank() {
+                fixList(in: textView)
+            }
             changeParagraph(on: editor)
             isEnter = false
         }

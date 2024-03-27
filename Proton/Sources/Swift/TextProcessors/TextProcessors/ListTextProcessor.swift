@@ -166,13 +166,6 @@ public class ListTextProcessor: TextProcessing {
             attributeValue: nil
         )
         
-        let rangeToReplace = NSRange(location: editedRange.location + 1, length: 1)
-        
-        editor.replaceCharacters(in: rangeToReplace, with: "")
-        if editor.selectedRange.endLocation >= rangeToReplace.endLocation {
-            editor.selectedRange = NSRange(location: editor.selectedRange.location - 1, length: 0)
-        }
-        
         let range = NSRange(location: editor.selectedRange.location, length: 1)
         if range.endLocation < editor.contentLength,
            editor.attributedText.substring(from: range) == "\n" {
@@ -183,6 +176,12 @@ public class ListTextProcessor: TextProcessing {
         editor.removeAttribute(.strikethroughStyle, at: editor.selectedRange)
         editor.typingAttributes[.foregroundColor] = editor.defaultColor
         editor.typingAttributes[.strikethroughStyle] = nil
+        
+        let rangeToReplace = NSRange(location: editedRange.location + 1, length: 1)
+        editor.replaceCharacters(in: rangeToReplace, with: "")
+        if editor.selectedRange.endLocation >= rangeToReplace.endLocation {
+            editor.selectedRange = NSRange(location: editor.selectedRange.location - 1, length: 0)
+        }
     }
 
     private func handleShiftReturn(editor: EditorView, editedRange: NSRange, attrs: [NSAttributedString.Key: Any]) {

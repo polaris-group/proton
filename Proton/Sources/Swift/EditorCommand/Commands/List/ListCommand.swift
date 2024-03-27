@@ -110,6 +110,7 @@ public class ListCommand: EditorCommand {
                 }
             } else {
                 ListTextProcessor().exitList(editor: editor)
+                editor.removeSingleBlank()
             }
             return
         }
@@ -127,9 +128,13 @@ public class ListCommand: EditorCommand {
             editor.typingAttributes[.strikethroughStyle] = nil
             editor.typingAttributes[.foregroundColor] = editor.defaultColor
             editor.attributedText.enumerateAttribute(.foregroundColor, in: selectedRange) { value, range, stop in
-                guard let color = value as? UIColor, let defaultColor = editor.defaultColor else { return }
-                if color.hexString() == defaultColor.withAlphaComponent(0.32).hexString() {
-                    editor.addAttribute(.foregroundColor, value: defaultColor, at: range)
+                guard let color = value as? UIColor else { return }
+                if let defaultColor = editor.defaultColor {
+                    if color.hexString() == defaultColor.withAlphaComponent(0.32).hexString() {
+                        editor.addAttribute(.foregroundColor, value: defaultColor, at: range)
+                    }
+                } else {
+                    editor.addAttribute(.foregroundColor, value: editor.textColor, at: range)
                 }
             }
             return
