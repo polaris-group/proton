@@ -1104,6 +1104,32 @@ extension EditorView {
             }
         }
     }
+    
+    public func removeSingleBlank() -> Bool {
+        let editor = self
+        let r = NSRange(location: editor.selectedRange.location - 1, length: 1)
+        if r.endLocation <= editor.contentLength,
+           editor.attributedText.substring(from: r) == ListTextProcessor.blankLineFiller,
+           let paragraphStyle = editor.attributedText.attribute(.paragraphStyle, at: r.location, effectiveRange: nil) as? NSParagraphStyle,
+           paragraphStyle.headIndent == 0 {
+            editor.replaceCharacters(in: r, with: "")
+            editor.selectedRange = NSRange(location: r.location, length: 0)
+            let newLineRange = NSRange(location: r.location - 1, length: 1)
+            editor.removeAttributes([.listItem, .listItemValue, .strikethroughColor, .strikethroughStyle], at: newLineRange)
+            var p = NSMutableParagraphStyle()
+            p.headIndent = 0
+            p.firstLineHeadIndent = 0
+            p.lineSpacing = paragraphStyle.lineSpacing
+            editor.typingAttributes[.paragraphStyle] = p
+            editor.typingAttributes[.strikethroughStyle] = nil
+            editor.typingAttributes[.strikethroughColor] = nil
+            editor.typingAttributes[.foregroundColor] = editor.defaultColor
+            editor.addAttribute(.paragraphStyle, value: p, at: newLineRange)
+            editor.removeAttribute(.paragraphStyle, at: newLineRange)
+            return true
+        }
+        return false
+    }
 }
 
 extension EditorView: DefaultTextFormattingProviding { }

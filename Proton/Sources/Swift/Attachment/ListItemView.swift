@@ -54,7 +54,8 @@ class ListItemView: UIView {
             self.checked = checked
             switch image.renderingMode {
             case .alwaysTemplate:
-                imageView.image = image.withRenderingMode(.alwaysTemplate).withTintColor(UIColor.white)
+                imageView.tintColor = .white
+                imageView.image = image
             default:
                 imageView.tintColor = .clear
                 if attrValue == "listItemBullet" {
