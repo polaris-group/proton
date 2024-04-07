@@ -212,6 +212,10 @@ class RichTextEditorContext: RichTextViewContext {
             isEnter = false
         }
         
+        if replacementText == " ", let editorView = richTextView.editorView {
+            editorView.detect()
+        }
+        
         richTextView.richTextViewDelegate?.richTextView(richTextView, didChangeTextAtRange: richTextView.selectedRange)
         self.lastBackgroundStyle = nil
         self.replacementText = ""
