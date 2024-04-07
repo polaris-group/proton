@@ -168,6 +168,8 @@ class RichTextEditorContext: RichTextViewContext {
                 editor.typingAttributes[attribute] = nil
             }
         }
+        
+        editor.typingAttributes[.link] = nil
     }
 
     func textViewDidChange(_ textView: UITextView) {
