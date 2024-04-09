@@ -169,7 +169,10 @@ class RichTextEditorContext: RichTextViewContext {
             }
         }
         
-        editor.typingAttributes[.link] = nil
+        if editor.typingAttributes[.link] != nil {
+            editor.typingAttributes[.link] = nil
+            editor.typingAttributes[.underlineStyle] = nil
+        }
     }
 
     func textViewDidChange(_ textView: UITextView) {

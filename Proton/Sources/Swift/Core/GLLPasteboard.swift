@@ -19,7 +19,7 @@ public enum GLLPasteboardSourceFrom {
 
 public struct GLLPasteboard {
     
-    private let limit = 1
+    private let limit = 10
     
     public static var general = GLLPasteboard()
     
@@ -35,6 +35,15 @@ public struct GLLPasteboard {
             stack.removeFirst()
         }
         stack.append(attributeString)
+    }
+        
+    func contains(_ content: String) -> Bool {
+        for s in stack {
+            if s.string == content {
+                return true
+            }
+        }
+        return false
     }
     
 }

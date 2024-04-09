@@ -1050,11 +1050,12 @@ open class EditorView: UIView {
         let mutableAttr = NSMutableAttributedString(attributedString: attributedText)
         detector.enumerateMatches(in: attributedText.string, options: [], range: NSMakeRange(0, attributedText.length)) { (match, _, _) in
             if let matchRange = match?.range, let url = match?.url {
-                mutableAttr.addAttributes([.link: url], range: matchRange)
+                mutableAttr.addAttributes([.link: url, .underlineStyle: NSUnderlineStyle.single.rawValue], range: matchRange)
            }
         }
         self.attributedText = mutableAttr
         self.typingAttributes[.link] = nil
+        self.typingAttributes[.underlineStyle] = nil
     }
     
 }
