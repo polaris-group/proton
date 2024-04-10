@@ -168,6 +168,11 @@ class RichTextEditorContext: RichTextViewContext {
                 editor.typingAttributes[attribute] = nil
             }
         }
+        
+        if editor.typingAttributes[.link] != nil {
+            editor.typingAttributes[.link] = nil
+            editor.typingAttributes[.underlineStyle] = nil
+        }
     }
 
     func textViewDidChange(_ textView: UITextView) {
@@ -208,6 +213,10 @@ class RichTextEditorContext: RichTextViewContext {
             }
             changeParagraph(on: editor)
             isEnter = false
+        }
+        
+        if replacementText == " ", let editorView = richTextView.editorView {
+            editorView.detect()
         }
         
         richTextView.richTextViewDelegate?.richTextView(richTextView, didChangeTextAtRange: richTextView.selectedRange)

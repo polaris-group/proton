@@ -1044,6 +1044,20 @@ open class EditorView: UIView {
         textViewDelegate.textViewDidChange?(richTextView)
         return true
     }
+    
+    public func detect() {
+        let detector = try! NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+        let mutableAttr = NSMutableAttributedString(attributedString: attributedText)
+        detector.enumerateMatches(in: attributedText.string, options: [], range: NSMakeRange(0, attributedText.length)) { (match, _, _) in
+            if let matchRange = match?.range, let url = match?.url {
+                mutableAttr.addAttributes([.link: url, .underlineStyle: NSUnderlineStyle.single.rawValue], range: matchRange)
+           }
+        }
+        self.attributedText = mutableAttr
+        self.typingAttributes[.link] = nil
+        self.typingAttributes[.underlineStyle] = nil
+    }
+    
 }
 
 extension EditorView {
